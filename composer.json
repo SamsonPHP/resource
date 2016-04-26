@@ -1,39 +1,42 @@
 {
-    "name": "samsonos/php_resourcer",
-    "description": "SamsonPHP resources manager module",
-    "keywords": [
-        "resource",
-        "static"
-    ],
-    "authors": [
-        {
-            "name": "Vitaly Iegorov",
-            "email": "egorov@samsonos.com"
-        },
-        {
-            "name": "Kotenko Nikita",
-            "email": "kotenko@samsonos.com"
-        }
-    ],
-    "require": {
-        "samsonos/php_core": "*"
+  "name": "samsonphp/resource",
+  "description": "SamsonPHP static resources management module",
+  "keywords": [
+    "resource",
+    "static"
+  ],
+  "authors": [
+    {
+      "name": "Vitaly Iegorov",
+      "email": "egorov@samsonos.com"
     },
-    "license": "Open Software License (OSL) v 3.0",
-    "homepage": "http://samsonos.com/",
-    "autoload": {
-        "classmap": [
-            "src/"
-        ],
-        "psr-4": {
-            "samsonphp\\resource": "src/"
-        },
-        "files": [
-            "src/global.php"
-        ]
-    },
-    "config": {
-        "github-protocols": [
-            "https"
-        ]
+    {
+      "name": "Kotenko Nikita",
+      "email": "kotenko@samsonos.com"
     }
+  ],
+  "require": {
+    "samsonos/php_core": "*"
+  },
+  "replace": {
+    "samsonos/php_resourcer": "*"
+  },
+  "license": "Open Software License (OSL) v 3.0",
+  "homepage": "http://samsonos.com/",
+  "autoload": {
+    "classmap": [
+      "src/"
+    ],
+    "psr-4": {
+      "samsonphp\\resource": "src/"
+    },
+    "files": [
+      "src/global.php"
+    ]
+  },
+  "config": {
+    "github-protocols": [
+      "https"
+    ]
+  }
 }

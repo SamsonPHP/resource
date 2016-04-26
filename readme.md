@@ -4,20 +4,20 @@ SamsonPHP static resource management module.
 
 > Main goal is gathering and managing web-application resources
 
-[![Latest Stable Version](https://poser.pugx.org/samsonos/php_resourcer/v/stable.svg)](https://packagist.org/packages/samsonos/php_resourcer)
-[![Build Status](https://scrutinizer-ci.com/g/samsonos/php_resourcer/badges/build.png?b=master)](https://scrutinizer-ci.com/g/samsonos/php_resourcer/build-status/master)
-[![Code Coverage](https://scrutinizer-ci.com/g/samsonos/php_resourcer/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/samsonos/php_resourcer/?branch=master)
-[![Code Climate](https://codeclimate.com/github/samsonos/php_resourcer/badges/gpa.svg)](https://codeclimate.com/github/samsonos/php_resourcer)
-[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/samsonos/php_resourcer/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/samsonos/php_resourcer/?branch=master) 
-[![Total Downloads](https://poser.pugx.org/samsonos/php_resourcer/downloads.svg)](https://packagist.org/packages/samsonos/php_resourcer)
-[![Stories in Ready](https://badge.waffle.io/samsonos/php_resourcer.png?label=ready&title=Ready)](https://waffle.io/samsonos/php_resourcer)
+[![Latest Stable Version](https://poser.pugx.org/SamsonPHP/Resource/v/stable.svg)](https://packagist.org/packages/SamsonPHP/Resource)
+[![Build Status](https://scrutinizer-ci.com/g/SamsonPHP/Resource/badges/build.png?b=master)](https://scrutinizer-ci.com/g/SamsonPHP/Resource/build-status/master)
+[![Code Coverage](https://scrutinizer-ci.com/g/SamsonPHP/Resource/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/SamsonPHP/Resource/?branch=master)
+[![Code Climate](https://codeclimate.com/github/SamsonPHP/Resource/badges/gpa.svg)](https://codeclimate.com/github/SamsonPHP/Resource)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/SamsonPHP/Resource/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/SamsonPHP/Resource/?branch=master) 
+[![Total Downloads](https://poser.pugx.org/SamsonPHP/Resource/downloads.svg)](https://packagist.org/packages/SamsonPHP/Resource)
+[![Stories in Ready](https://badge.waffle.io/SamsonPHP/Resource.png?label=ready&title=Ready)](https://waffle.io/SamsonPHP/Resource)
  
 ##Documentation
-Follow [official documentation](http://github.com/samsonos/php_resourcer/blob/master/docs/Index.md).
+Follow [official documentation](http://github.com/SamsonPHP/Resource/blob/master/docs/Index.md).
  
 ##Installation
 You can install this package through Composer:
-```composer require samsonos/php_resourcer```
+```composer require samsonphp/Resource```
 The packages adheres to the SemVer specification, and there will be full backward compatibility between minor versions.
 
 ##Testing
