@@ -1,5 +1,5 @@
 <?php
-namespace samson\resourcer;
+namespace samsonphp\resource;
 
 use samson\core\iModule;
 use samson\core\File;

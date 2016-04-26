@@ -1,6 +1,6 @@
 {
     "name": "samsonos/php_resourcer",
-    "description": "SamsonPHP static resources manager module",
+    "description": "SamsonPHP resources manager module",
     "keywords": [
         "resource",
         "static"
@@ -24,8 +24,8 @@
         "classmap": [
             "src/"
         ],
-        "psr-0": {
-            "samson\\resourcer": "src/"
+        "psr-4": {
+            "samsonphp\\resource": "src/"
         },
         "files": [
             "src/global.php"

@@ -1,0 +1,1 @@
+# SamsonPHP Resource module documentation
