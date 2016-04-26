@@ -27,84 +27,27 @@ class Router extends ExternalModule
 {
     /** Event showing that new gather resource file was created */
     const EVENT_CREATED = 'resource.created';
+
     /** Event showing that new gather resource file was created */
     const EVENT_START_GENERATE_RESOURCES = 'resource.start.generate.resources';
-    /** Коллекция маршрутов к модулям */
-    public static $routes = array();
-    /** Коллекция MIME типов для формирования заголовков */
-    public static $mime = array
-    (
-        'css'   => 'text/css',
-        'woff'  => 'application/x-font-woff',
-        'woff2' => 'application/x-font-woff2',
-        'otf'   => 'application/octet-stream',
-        'ttf'   => 'application/octet-stream',
-        'eot'   => 'application/vnd.ms-fontobject',
-        'js'    => 'application/x-javascript',
-        'htm'   => 'text/html;charset=utf-8',
-        'htc'   => 'text/x-component',
-        'jpg'   => 'image/jpeg',
-        'png'   => 'image/png',
-        'jpg'   => 'image/jpg',
-        'gif'   => 'image/gif',
-        'txt'   => 'text/plain',
-        'pdf'   => 'application/pdf',
-        'rtf'   => 'application/rtf',
-        'doc'   => 'application/msword',
-        'xls'   => 'application/msexcel',
-        'xls'   => 'application/vnd.ms-excel',
-        'xlsx'  => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'docx'  => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'svg'   => 'image/svg+xml',
-        'mp4'   => 'video/mp4',
-        'ogg'   => 'video/ogg'
-    );
+
+    /** Identifier */
+    protected $id = 'resource';
+
     /** @var string Marker for inserting generated javascript link */
     public $javascriptMarker = '</body>';
+
     /** Cached resources path collection */
     public $cached = array();
+
     /** Collection of updated cached resources for notification of changes */
     public $updated = array();
-    /** Идентификатор модуля */
-    protected $id = 'resourcer';
+
     /** Pointer to processing module */
     private $c_module;
 
     /** @var string Current processed resource */
     private $cResource;
-
-    /**
-     * Получить путь к ресурсу веб-приложения/модуля по унифицированному URL
-     *
-     * @param string $path        Относительный путь к ресурсу модуля/приложения
-     * @param string $destination Имя маршрута из таблицы маршрутизации
-     *
-     * @return string Физическое относительное расположение ресурса в системе
-     */
-    public static function parse($path, $destination = 'local')
-    {
-        // Найдем в рабочей папке приложения файл с маршрутами
-        $result = array();
-        foreach (File::dir(__SAMSON_CWD__ . __SAMSON_CACHE_PATH, 'map', '', $result) as $file) {
-            // Прочитаем файл с маршрутами и загрузим маршруты
-            self::$routes = unserialize(file_get_contents($file));
-
-            // Остановим цикл
-            break;
-        }
-
-        // Если передан слеш в пути - отрежим его т.к. пути к модулям его обязательно включают
-        if ($path[0] == '/') {
-            $path = substr($path, 1);
-        }
-
-        // Сформируем путь к модулю/предложению, если он задан
-        // и добавим относительный путь к самому ресурсу
-        $path = (isset(self::$routes[$destination]) ? self::$routes[$destination] : '') . $path;
-
-        // Вернем полученный путь
-        return $path;
-    }
 
     /**
      * Parse URL to get module name and relative path to resource
@@ -126,42 +69,19 @@ class Router extends ExternalModule
         }
     }
 
-    /** Default controller */
-    public function __BASE()
-    {
-        $this->init();
-    }
-
-    /**    @see ModuleConnector::init() */
+    /** @see ModuleConnector::init() */
     public function init(array $params = array())
     {
         parent::init($params);
 
-        // Создадим имя файла содержащего пути к модулям
-        $map_file = md5(implode('', array_keys(s()->module_stack))) . '.map';
-
-        // Если такого файла нет
-        if ($this->cache_refresh($map_file)) {
-            // Fill in routes collection
-            foreach ($this->system->module_stack as $id => $module) {
-                self::$routes[$id] = $module->path();
-            }
-
-            // Save routes to file
-            file_put_contents($map_file, serialize(self::$routes));
-        }
-
         $moduleList = $this->system->module_stack;
 
         Event::fire(self::EVENT_START_GENERATE_RESOURCES, array(&$moduleList));
-        //trace(array_keys($moduleList));die;
 
         $this->generateResources($moduleList);
 
-        //$this->generateResources($this->system->module_stack);
-
         // Subscribe to core rendered event
-        s()->subscribe('core.rendered', array($this, 'renderer'));
+        $this->system->subscribe('core.rendered', array($this, 'renderer'));
     }
 
     public function generateResources($moduleList, $templatePath = 'default')
