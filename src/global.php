@@ -42,47 +42,40 @@ $url = array_values(array_filter(explode('/', parse_url($url, PHP_URL_PATH))));
 
 // Special hook to avoid further framework loading if this is static resource request
 if (array_key_exists(0, $url) && $url[0] === STATIC_RESOURCE_HANDLER) {
-    // Получить путь к ресурсу системы по URL
+    // Get full path to static resource
     $filename = realpath('../' . $_GET['p']);
 
     if (file_exists($filename)) {
-        // Этот параметр характеризирует время последней модификации ресурса
-        // и любые его доп параметры конечно( ПОКА ТАКИХ НЕТ )
-        $c_etag = array_key_exists('HTTP_IF_NONE_MATCH', $_SERVER) ? $_SERVER['HTTP_IF_NONE_MATCH'] : '';
+        // Receive current ETag for resource(if present)
+        $clientETag = array_key_exists('HTTP_IF_NONE_MATCH', $_SERVER) ? $_SERVER['HTTP_IF_NONE_MATCH'] : '';
 
-        // Получим параметр от сервера как отметку времени последнего
-        // изменения оригинала ресурса и любые его доп параметры
-        // конечно( ПОКА ТАКИХ НЕТ )
-        $s_etag = filemtime($filename);
+        // Generate ETag for resource
+        $serverETag = filemtime($filename);
 
-        // Установим заголовки для кеширования
-        // Поддержка кеша браузера
+        // Set old cache headers
         header('Cache-Control:max-age=1800');
 
-        // Установим заголовок с текущим значением параметра валидности ресурса
-        header('ETag:' . $s_etag);
+        // Always set new ETag header independently on further actions
+        header('ETag:' . $serverETag);
 
         // Get file extension
         $extension = pathinfo($filename, PATHINFO_EXTENSION);
 
-        // Если эти параметры совпадают - значит оригинал ресурса в кеше клиента - валидный
-        // Сообщим об этом клиенту специальным заголовком
-        if ($c_etag === $s_etag) {
+        // If server and client ETags are equal
+        if ($clientETag === $serverETag) {
             header('HTTP/1.1 304 Not Modified');
-        } else {
-            // Если эти параметры НЕ совпадают - значит оригинал ресурса был изменен
-            // и мы поддерживаем данное расширение для выдачи как ресурс
-            if (array_key_exists($extension, $mimeTypes)) {
-                // Укажем тип выдаваемого ресурса
-                header('Content-type: ' . $mimeTypes[$extension]);
+        } elseif (array_key_exists($extension, $mimeTypes)) {
+            // Check if we support served resource
 
-                // Выведем содержимое файла
-                echo file_get_contents($filename);
-            } else { // Мы не поддерживаем указанное расширение файла для выдачи как ресурс
-                header('HTTP/1.0 404 Not Found');
-            }
+            // Set mime type
+            header('Content-type: ' . $mimeTypes[$extension]);
+
+            // Output resource
+            echo file_get_contents($filename);
+        } else { // File type is not supported
+            header('HTTP/1.0 404 Not Found');
         }
-    } else { // Требуемый файл не существует на сервере
+    } else { // File not found
         header('HTTP/1.0 404 Not Found');
     }
 
