@@ -1,110 +1,91 @@
 <?php
-use samsonphp\resource\Router;
+/**
+ * Created by Vitaly Iegorov <egorov@samsonos.com>.
+ * on 26.04.16 at 10:43
+ */
 
-/** Initialize global module context only if SamsonPHP core is loaded */
-if (function_exists('s')) {
-    /**
-     * Route(Маршрут) - Получить экземпляр класса для работы с маршрутами системы
-     * @see ResourceRouter
-     * @deprecated
-     * @return Router Экземпляр класса для работы с маршрутами системы
-     */
-    function & route()
-    {
-        static $_v;
-        return ($_v = isset($_v) ? $_v : new Router());
-    }
+// Define this module identifier
+define('STATIC_RESOURCE_HANDLER', 'view');
 
-    /**
-     * SRC(Source) - Источник - сгенерирвать URL к ресурсу веб-приложения
-     * Данный метод определяет текущее место работы веб-приложения
-     * и строит УНИКАЛЬНЫЙ путь к требуемому ресурсу.
-     *
-     *  Это позволяет подключать CSS/JS/Image ресурсы в HTML/CSS не пережевая
-     *  за их физическое месторасположение относительно веб-приложения, что
-     *  в свою очередь дает возможность выносить модули(делать их внешними),
-     *  а так же и целые веб-приложения.
-     *
-     * @param string $src Путь к ресурсу модуля
-     * @param string $module Имя модуля которому принадлежит ресурс
-     * @param string $return Флаг необходимо ли возвращать значение
-     * @return string Возвращает сгенерированный адресс ссылки на получение ресурса для браузера
-     */
-    function src($src = '', $module = null)
-    {
-        echo Router::url($src, $module);
-    }
+/** Collection of supported mime types */
+$mimeTypes = array(
+    'css' => 'text/css',
+    'woff' => 'application/x-font-woff',
+    'woff2' => 'application/x-font-woff2',
+    'otf' => 'application/octet-stream',
+    'ttf' => 'application/octet-stream',
+    'eot' => 'application/vnd.ms-fontobject',
+    'js' => 'application/x-javascript',
+    'htm' => 'text/html;charset=utf-8',
+    'htc' => 'text/x-component',
+    'jpeg' => 'image/jpeg',
+    'png' => 'image/png',
+    'jpg' => 'image/jpg',
+    'gif' => 'image/gif',
+    'txt' => 'text/plain',
+    'pdf' => 'application/pdf',
+    'rtf' => 'application/rtf',
+    'doc' => 'application/msword',
+    'xls' => 'application/msexcel',
+    'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'svg' => 'image/svg+xml',
+    'mp4' => 'video/mp4',
+    'ogg' => 'video/ogg'
+);
 
-    /** Perform custom simple URL parsing to match needed URL for static resource serving */
-    $url = isset($_SERVER["REQUEST_URI"]) ? $_SERVER["REQUEST_URI"] : '';
-
-// Remove BASE from url path to support internal web-applications
-    if (($basePos = strpos($url, __SAMSON_BASE__)) == 0) {
-        $url = substr($url, strlen(__SAMSON_BASE__));
-    }
+// Perform custom simple URL parsing to match needed URL for static resource serving
+$url = array_key_exists('REQUEST_URI', $_SERVER) ? $_SERVER['REQUEST_URI'] : '';
 
 // Get URL path from URL and split with "/"
-    $url = array_values(array_filter(explode('/', parse_url($url, PHP_URL_PATH))));
-    $module = isset($url[0]) ? $url[0] : '';
-    $method = isset($url[1]) ? $url[1] : '';
+$url = array_values(array_filter(explode('/', parse_url($url, PHP_URL_PATH))));
 
-    /**
-     * Special hook to avoid further framework loading if this is static resource request
-     */
-    if ($module === 'resourcer' && $method != 'table') {
+// Special hook to avoid further framework loading if this is static resource request
+if (array_key_exists(0, $url) && $url[0] === STATIC_RESOURCE_HANDLER) {
+    // Получить путь к ресурсу системы по URL
+    $filename = realpath('../' . $_GET['p']);
 
-        // Запретим вывод ошибок
-        //Error::$OUTPUT = false;
+    if (file_exists($filename)) {
+        // Этот параметр характеризирует время последней модификации ресурса
+        // и любые его доп параметры конечно( ПОКА ТАКИХ НЕТ )
+        $c_etag = array_key_exists('HTTP_IF_NONE_MATCH', $_SERVER) ? $_SERVER['HTTP_IF_NONE_MATCH'] : '';
 
-        // Получить путь к ресурсу системы по URL
-        $filename = Router::parse($_GET['p'], $method);
+        // Получим параметр от сервера как отметку времени последнего
+        // изменения оригинала ресурса и любые его доп параметры
+        // конечно( ПОКА ТАКИХ НЕТ )
+        $s_etag = filemtime($filename);
 
-        // Проверим существует ли ресурс реально
-        if (file_exists($filename)) {
-            // Этот параметр характеризирует время последней модификации ресурса
-            // и любые его доп параметры конечно( ПОКА ТАКИХ НЕТ )
-            $c_etag = isset($_SERVER['HTTP_IF_NONE_MATCH']) ? $_SERVER['HTTP_IF_NONE_MATCH'] : '';
+        // Установим заголовки для кеширования
+        // Поддержка кеша браузера
+        header('Cache-Control:max-age=1800');
 
-            // Получим параметр от сервера как отметку времени последнего
-            // изменения оригинала ресурса и любые его доп параметры
-            // конечно( ПОКА ТАКИХ НЕТ )
-            $s_etag = filemtime($filename);
+        // Установим заголовок с текущим значением параметра валидности ресурса
+        header('ETag:' . $s_etag);
 
-            // Установим заголовки для кеширования
-            // Поддержка кеша браузера
-            header('Cache-Control:max-age=1800');
+        // Get file extension
+        $extension = pathinfo($filename, PATHINFO_EXTENSION);
 
-            // Установим заголовок с текущим значением параметра валидности ресурса
-            header('ETag:' . $s_etag);
-
-            // Get file extension
-            $extension = pathinfo($filename, PATHINFO_EXTENSION);
-
-            // Если эти параметры совпадают - значит оригинал ресурса в кеше клиента - валидный
-            // Сообщим об этом клиенту специальным заголовком
-            if ($c_etag == $s_etag) {
-                header('HTTP/1.1 304 Not Modified');
-            }
+        // Если эти параметры совпадают - значит оригинал ресурса в кеше клиента - валидный
+        // Сообщим об этом клиенту специальным заголовком
+        if ($c_etag === $s_etag) {
+            header('HTTP/1.1 304 Not Modified');
+        } else {
             // Если эти параметры НЕ совпадают - значит оригинал ресурса был изменен
             // и мы поддерживаем данное расширение для выдачи как ресурс
-            else {
-                if (isset(Router::$mime[$extension])) {
-                    // Укажем тип выдаваемого ресурса
-                    header('Content-type: ' . Router::$mime[$extension]);
+            if (array_key_exists($extension, $mimeTypes)) {
+                // Укажем тип выдаваемого ресурса
+                header('Content-type: ' . $mimeTypes[$extension]);
 
-                    // Выведем содержимое файла
-                    echo file_get_contents($filename);
-                } // Мы не поддерживаем указанное расширение файла для выдачи как ресурс
-                else {
-                    header('HTTP/1.0 404 Not Found');
-                }
+                // Выведем содержимое файла
+                echo file_get_contents($filename);
+            } else { // Мы не поддерживаем указанное расширение файла для выдачи как ресурс
+                header('HTTP/1.0 404 Not Found');
             }
-        } // Требуемый файл не существует на сервере
-        else {
-            header('HTTP/1.0 404 Not Found');
         }
-
-        // Avoid further request processing
-        die();
+    } else { // Требуемый файл не существует на сервере
+        header('HTTP/1.0 404 Not Found');
     }
+
+    // Avoid further request processing
+    die();
 }
