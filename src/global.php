@@ -1,5 +1,5 @@
 <?php
-use samson\resourcer\ResourceRouter;
+use samsonphp\resource\Router;
 
 /** Initialize global module context only if SamsonPHP core is loaded */
 if (function_exists('s')) {
@@ -7,12 +7,12 @@ if (function_exists('s')) {
      * Route(Маршрут) - Получить экземпляр класса для работы с маршрутами системы
      * @see ResourceRouter
      * @deprecated
-     * @return ResourceRouter Экземпляр класса для работы с маршрутами системы
+     * @return Router Экземпляр класса для работы с маршрутами системы
      */
     function & route()
     {
         static $_v;
-        return ($_v = isset($_v) ? $_v : new ResourceRouter());
+        return ($_v = isset($_v) ? $_v : new Router());
     }
 
     /**
@@ -32,7 +32,7 @@ if (function_exists('s')) {
      */
     function src($src = '', $module = null)
     {
-        echo ResourceRouter::url($src, $module);
+        echo Router::url($src, $module);
     }
 
     /** Perform custom simple URL parsing to match needed URL for static resource serving */
@@ -57,7 +57,7 @@ if (function_exists('s')) {
         //Error::$OUTPUT = false;
 
         // Получить путь к ресурсу системы по URL
-        $filename = ResourceRouter::parse($_GET['p'], $method);
+        $filename = Router::parse($_GET['p'], $method);
 
         // Проверим существует ли ресурс реально
         if (file_exists($filename)) {
@@ -88,9 +88,9 @@ if (function_exists('s')) {
             // Если эти параметры НЕ совпадают - значит оригинал ресурса был изменен
             // и мы поддерживаем данное расширение для выдачи как ресурс
             else {
-                if (isset(ResourceRouter::$mime[$extension])) {
+                if (isset(Router::$mime[$extension])) {
                     // Укажем тип выдаваемого ресурса
-                    header('Content-type: ' . ResourceRouter::$mime[$extension]);
+                    header('Content-type: ' . Router::$mime[$extension]);
 
                     // Выведем содержимое файла
                     echo file_get_contents($filename);

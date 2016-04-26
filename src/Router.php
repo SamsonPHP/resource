@@ -1,9 +1,9 @@
 <?php
 namespace samsonphp\resource;
 
-use samson\core\iModule;
+use samson\core\ExternalModule;
 use samson\core\File;
-use \samson\core\ExternalModule;
+use samson\core\iModule;
 use samsonphp\event\Event;
 
 /**
@@ -23,7 +23,7 @@ use samsonphp\event\Event;
  * @author Nikita Kotenko <nick.w2r@gmail.com>
  * @version 1.0
  */
-class ResourceRouter extends ExternalModule
+class Router extends ExternalModule
 {
     /** Event showing that new gather resource file was created */
     const EVENT_CREATED = 'resource.created';
@@ -31,10 +31,6 @@ class ResourceRouter extends ExternalModule
     const EVENT_START_GENERATE_RESOURCES = 'resource.start.generate.resources';
     /** Коллекция маршрутов к модулям */
     public static $routes = array();
-
-    /** @var string Marker for inserting generated javascript link */
-    public $javascriptMarker = '</body>';
-
     /** Коллекция MIME типов для формирования заголовков */
     public static $mime = array
     (
@@ -63,21 +59,72 @@ class ResourceRouter extends ExternalModule
         'mp4'   => 'video/mp4',
         'ogg'   => 'video/ogg'
     );
-
-    /** Идентификатор модуля */
-    protected $id = 'resourcer';
-
+    /** @var string Marker for inserting generated javascript link */
+    public $javascriptMarker = '</body>';
     /** Cached resources path collection */
     public $cached = array();
-
     /** Collection of updated cached resources for notification of changes */
     public $updated = array();
-
+    /** Идентификатор модуля */
+    protected $id = 'resourcer';
     /** Pointer to processing module */
     private $c_module;
 
     /** @var string Current processed resource */
     private $cResource;
+
+    /**
+     * Получить путь к ресурсу веб-приложения/модуля по унифицированному URL
+     *
+     * @param string $path        Относительный путь к ресурсу модуля/приложения
+     * @param string $destination Имя маршрута из таблицы маршрутизации
+     *
+     * @return string Физическое относительное расположение ресурса в системе
+     */
+    public static function parse($path, $destination = 'local')
+    {
+        // Найдем в рабочей папке приложения файл с маршрутами
+        $result = array();
+        foreach (File::dir(__SAMSON_CWD__ . __SAMSON_CACHE_PATH, 'map', '', $result) as $file) {
+            // Прочитаем файл с маршрутами и загрузим маршруты
+            self::$routes = unserialize(file_get_contents($file));
+
+            // Остановим цикл
+            break;
+        }
+
+        // Если передан слеш в пути - отрежим его т.к. пути к модулям его обязательно включают
+        if ($path[0] == '/') {
+            $path = substr($path, 1);
+        }
+
+        // Сформируем путь к модулю/предложению, если он задан
+        // и добавим относительный путь к самому ресурсу
+        $path = (isset(self::$routes[$destination]) ? self::$routes[$destination] : '') . $path;
+
+        // Вернем полученный путь
+        return $path;
+    }
+
+    /**
+     * Parse URL to get module name and relative path to resource
+     *
+     * @param string $url String for parsing
+     *
+     * @return array Array [0] => module name, [1]=>relative_path
+     */
+    public static function parseURL($url, & $module = null, & $path = null)
+    {
+        // If we have URL to resource router
+        if (preg_match('/resourcer\/(?<module>.+)\?p=(?<path>.+)/ui', $url, $matches)) {
+            $module = $matches['module'];
+            $path = $matches['path'];
+
+            return true;
+        } else {
+            return false;
+        }
+    }
 
     /** Default controller */
     public function __BASE()
@@ -85,42 +132,36 @@ class ResourceRouter extends ExternalModule
         $this->init();
     }
 
-    /**
-     * Core render handler for including CSS and JS resources to html
-     *
-     * @param sting $view View content
-     * @param array $data View data
-     *
-     * @return string Processed view content
-     */
-    public function renderer(&$view, $data = array(), iModule $m = null)
+    /**    @see ModuleConnector::init() */
+    public function init(array $params = array())
     {
-        $tempateId = isset($this->cached['css'][$this->system->template()]) ? $this->system->template() : 'default';
+        parent::init($params);
 
-        // Define resource urls
-        $css = url()->base() . str_replace(__SAMSON_PUBLIC_PATH, '', $this->cached['css'][$tempateId]);
-        $js  = url()->base() . str_replace(__SAMSON_PUBLIC_PATH, '', $this->cached['js'][$tempateId]);
+        // Создадим имя файла содержащего пути к модулям
+        $map_file = md5(implode('', array_keys(s()->module_stack))) . '.map';
 
-        // TODO: Прорисовка зависит от текущего модуля, сделать єто через параметр прорисовщика
-        // If called from compressor
-        if ($m->id() == 'compressor') {
-            $tempateId = isset($this->cached['css'][$data['file']]) ? $data['file'] : 'default';
-            $css = url()->base() . basename($this->cached['css'][$tempateId]);
-            $js  = url()->base() . basename($this->cached['js'][$tempateId]);
+        // Если такого файла нет
+        if ($this->cache_refresh($map_file)) {
+            // Fill in routes collection
+            foreach ($this->system->module_stack as $id => $module) {
+                self::$routes[$id] = $module->path();
+            }
+
+            // Save routes to file
+            file_put_contents($map_file, serialize(self::$routes));
         }
 
-        // Put css link at the end of <head> page block
-        $view = str_ireplace('</head>',
-            "\n" . '<link type="text/css" rel="stylesheet" href="' . $css . '">' . "\n" . '</head>', $view);
+        $moduleList = $this->system->module_stack;
 
-        // Put javascript link in the end of the document
-        $view = str_ireplace($this->javascriptMarker,
-            "\n" . '<script type="text/javascript" src="' . $js . '"></script>' . "\n" . $this->javascriptMarker,
-            $view);
+        Event::fire(self::EVENT_START_GENERATE_RESOURCES, array(&$moduleList));
+        //trace(array_keys($moduleList));die;
 
-        //elapsed('Rendering view =)');
+        $this->generateResources($moduleList);
 
-        return $view;
+        //$this->generateResources($this->system->module_stack);
+
+        // Subscribe to core rendered event
+        s()->subscribe('core.rendered', array($this, 'renderer'));
     }
 
     public function generateResources($moduleList, $templatePath = 'default')
@@ -195,36 +236,42 @@ class ResourceRouter extends ExternalModule
         }
     }
 
-    /**    @see ModuleConnector::init() */
-    public function init(array $params = array())
+    /**
+     * Core render handler for including CSS and JS resources to html
+     *
+     * @param sting $view View content
+     * @param array $data View data
+     *
+     * @return string Processed view content
+     */
+    public function renderer(&$view, $data = array(), iModule $m = null)
     {
-        parent::init($params);
+        $tempateId = isset($this->cached['css'][$this->system->template()]) ? $this->system->template() : 'default';
 
-        // Создадим имя файла содержащего пути к модулям
-        $map_file = md5(implode('', array_keys(s()->module_stack))) . '.map';
+        // Define resource urls
+        $css = url()->base() . str_replace(__SAMSON_PUBLIC_PATH, '', $this->cached['css'][$tempateId]);
+        $js = url()->base() . str_replace(__SAMSON_PUBLIC_PATH, '', $this->cached['js'][$tempateId]);
 
-        // Если такого файла нет
-        if ($this->cache_refresh($map_file)) {
-            // Fill in routes collection
-            foreach ($this->system->module_stack as $id => $module) {
-                self::$routes[$id] = $module->path();
-            }
-
-            // Save routes to file
-            file_put_contents($map_file, serialize(self::$routes));
+        // TODO: Прорисовка зависит от текущего модуля, сделать єто через параметр прорисовщика
+        // If called from compressor
+        if ($m->id() == 'compressor') {
+            $tempateId = isset($this->cached['css'][$data['file']]) ? $data['file'] : 'default';
+            $css = url()->base() . basename($this->cached['css'][$tempateId]);
+            $js = url()->base() . basename($this->cached['js'][$tempateId]);
         }
 
-        $moduleList = $this->system->module_stack;
+        // Put css link at the end of <head> page block
+        $view = str_ireplace('</head>',
+            "\n" . '<link type="text/css" rel="stylesheet" href="' . $css . '">' . "\n" . '</head>', $view);
 
-        Event::fire(self::EVENT_START_GENERATE_RESOURCES, array(&$moduleList));
-        //trace(array_keys($moduleList));die;
+        // Put javascript link in the end of the document
+        $view = str_ireplace($this->javascriptMarker,
+            "\n" . '<script type="text/javascript" src="' . $js . '"></script>' . "\n" . $this->javascriptMarker,
+            $view);
 
-        $this->generateResources($moduleList);
+        //elapsed('Rendering view =)');
 
-        //$this->generateResources($this->system->module_stack);
-
-        // Subscribe to core rendered event
-        s()->subscribe('core.rendered', array($this, 'renderer'));
+        return $view;
     }
 
     /** Callback for CSS url rewriting */
@@ -258,7 +305,7 @@ class ResourceRouter extends ExternalModule
                     $realPath = $this->c_module->path() . $url;
 
                     // Try to find path in module root folder
-                    if ( ! file_exists($realPath)) {
+                    if (!file_exists($realPath)) {
                         // Build path to "new" module public folder www
                         $realPath = $this->c_module->path() . __SAMSON_PUBLIC_PATH . $url;
 
@@ -286,59 +333,6 @@ class ResourceRouter extends ExternalModule
     }
 
     /**
-     * Получить путь к ресурсу веб-приложения/модуля по унифицированному URL
-     *
-     * @param string $path Относительный путь к ресурсу модуля/приложения
-     * @param string $destination Имя маршрута из таблицы маршрутизации
-     *
-     * @return string Физическое относительное расположение ресурса в системе
-     */
-    public static function parse($path, $destination = 'local')
-    {
-        // Найдем в рабочей папке приложения файл с маршрутами
-        $result = array();
-        foreach (File::dir(__SAMSON_CWD__ . __SAMSON_CACHE_PATH, 'map', '', $result) as $file) {
-            // Прочитаем файл с маршрутами и загрузим маршруты
-            self::$routes = unserialize(file_get_contents($file));
-
-            // Остановим цикл
-            break;
-        }
-
-        // Если передан слеш в пути - отрежим его т.к. пути к модулям его обязательно включают
-        if ($path[0] == '/') {
-            $path = substr($path, 1);
-        }
-
-        // Сформируем путь к модулю/предложению, если он задан
-        // и добавим относительный путь к самому ресурсу
-        $path = (isset(self::$routes[$destination]) ? self::$routes[$destination] : '') . $path;
-
-        // Вернем полученный путь
-        return $path;
-    }
-
-    /**
-     * Parse URL to get module name and relative path to resource
-     *
-     * @param string $url String for parsing
-     *
-     * @return array Array [0] => module name, [1]=>relative_path
-     */
-    public static function parseURL($url, & $module = null, & $path = null)
-    {
-        // If we have URL to resource router
-        if (preg_match('/resourcer\/(?<module>.+)\?p=(?<path>.+)/ui', $url, $matches)) {
-            $module = $matches['module'];
-            $path   = $matches['path'];
-
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    /**
      * Получить уникальный URL однозначно определяющий маршрут к ресурсу
      * веб-приложения/модуля
      *
@@ -356,41 +350,5 @@ class ResourceRouter extends ExternalModule
 
         // Сформируем URL-маршрут для доступа к ресурсу
         return url()->base() . 'resourcer/' . ($_module->id() != 'resourcer' ? $_module->id() : '') . '/?p=' . $path;
-    }
-
-    /** Получить реальный путь к ресурсу */
-    public function __parse($module = 'local')
-    {
-        s()->async(true);
-
-        // Получить путь к ресурсу системы по URL
-        $filename = ResourceRouter2::parse($_GET['p'], $module);
-
-        // Выведем маршрут
-        trace($module . '#' . $_GET['p'] . ' -> ' . $filename);
-
-    }
-
-    /** Получить реальный путь к ресурсу */
-    public function __table()
-    {
-        s()->async(true);
-
-        $path = __SAMSON_CWD__ . __SAMSON_CACHE_PATH . '/resourcer/';
-
-        if (file_exists($path) && ($handle = opendir($path))) {
-            //Именно этот способ чтения элементов каталога является правильным.
-            while (false !== ($entry = readdir($handle))) {
-
-                // Найдем фацл с расширением map
-                if (pathinfo($entry, PATHINFO_EXTENSION) == 'map') {
-                    $text = file($path . $entry);
-
-                    $table = isset($text[0]) ? unserialize($text[0]) : array();
-
-                    break;
-                }
-            }
-        }
     }
 }
