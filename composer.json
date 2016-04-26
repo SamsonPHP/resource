@@ -28,7 +28,7 @@
       "src/"
     ],
     "psr-4": {
-      "samsonphp\\resource": "src/"
+      "samsonphp\\resource\\": "src/"
     },
     "files": [
       "src/global.php"
