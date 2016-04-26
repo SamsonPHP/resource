@@ -65,8 +65,6 @@ if (array_key_exists(0, $url) && $url[0] === STATIC_RESOURCE_HANDLER) {
         if ($clientETag === $serverETag) {
             header('HTTP/1.1 304 Not Modified');
         } elseif (array_key_exists($extension, $mimeTypes)) {
-            // Check if we support served resource
-
             // Set mime type
             header('Content-type: ' . $mimeTypes[$extension]);
 
