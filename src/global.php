@@ -5,7 +5,7 @@
  */
 
 // Define this module identifier
-define('STATIC_RESOURCE_HANDLER', 'view');
+define('STATIC_RESOURCE_HANDLER', 'resourcer');
 
 /** Collection of supported mime types */
 $mimeTypes = array(

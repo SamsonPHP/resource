@@ -2,9 +2,9 @@
 namespace samsonphp\resource;
 
 use samson\core\ExternalModule;
-use samson\core\File;
 use samson\core\iModule;
 use samsonphp\event\Event;
+use samsonphp\resource\exception\ResourceNotFound;
 
 /**
  * Класс для определения, построения и поиска путей к ресурсам
@@ -32,7 +32,7 @@ class Router extends ExternalModule
     const EVENT_START_GENERATE_RESOURCES = 'resource.start.generate.resources';
 
     /** Identifier */
-    protected $id = 'resource';
+    protected $id = STATIC_RESOURCE_HANDLER;
 
     /** @var string Marker for inserting generated javascript link */
     public $javascriptMarker = '</body>';
@@ -197,59 +197,45 @@ class Router extends ExternalModule
     /** Callback for CSS url rewriting */
     public function src_replace_callback($matches)
     {
-        // Если мы нашли шаблон - переберем все найденные патерны
-        if (isset($matches[2]) && strpos($matches[2], 'data:') === false) {
-            // Remove relative path from resource path
-            $url = str_replace('../', '/', $matches[2]);
+        // If we have found static resource path definition and its not inline
+        if (array_key_exists(2, $matches) && strpos($matches[2], 'data:') === false) {
+            // Store static resource path
+            $url = $matches[2];
 
-            // Routes with this module controller do not need changes
-            if (strpos($url, '/' . $this->id . '/') === false) {
-
-                // Remove possible GET parameters from resource path
-                if (($getStart = stripos($url, '?')) !== false) {
-                    $url = substr($url, 0, $getStart);
-                }
-
-                // Remove possible HASH parameters from resource path
-                if (($getStart = stripos($url, '#')) !== false) {
-                    $url = substr($url, 0, $getStart);
-                }
-
-                //trace($this->c_module->id.'-'.get_class($this->c_module).'-'.$url.'-'.is_a( $this->c_module, ns_classname('ExternalModule','samson\core')));;
-
-                // Always rewrite url's for external modules and for remote web applications
-                if (is_a($this->c_module,
-                        \samson\core\AutoLoader::className('ExternalModule', 'samson\core')) || __SAMSON_REMOTE_APP
-                ) {
-                    // Build real path to resource
-                    $realPath = $this->c_module->path() . $url;
-
-                    // Try to find path in module root folder
-                    if (!file_exists($realPath)) {
-                        // Build path to "new" module public folder www
-                        $realPath = $this->c_module->path() . __SAMSON_PUBLIC_PATH . $url;
-
-                        // Try to find path in module Public folder
-                        if (file_exists($realPath)) {
-                            $url = 'www/' . $url;
-                        } else { // Signal error
-                            //e('[##][##] Cannot find CSS resource[##] in path[##]',D_SAMSON_DEBUG, array($this->c_module->id, $realPath, $url, $this->cResource));
-                        }
-                    }
-
-                    // Rewrite URL using router
-                    $url = self::url($url, $this->c_module);
-                } else if (is_a($this->c_module, \samson\core\AutoLoader::className('LocalModule', 'samson\core'))) {
-                    $url = url()->base() . $url;
-                }
-
-                return 'url("' . $url . '")';
-            } else {
-                return 'url("' . $matches[2] . '")';
+            // Ignore preprocessor vars
+            // TODO: This is totally wrong need to come up with decision
+            if (strpos($url, '@') !== false) {
+                return $matches[0];
             }
-        } else { // Just return original value
-            return $matches[0];
+
+            // Remove possible GET parameters from resource path
+            if (($getStart = stripos($url, '?')) !== false) {
+                $url = substr($url, 0, $getStart);
+            }
+
+            // Remove possible HASH parameters from resource path
+            if (($getStart = stripos($url, '#')) !== false) {
+                $url = substr($url, 0, $getStart);
+            }
+
+            // Build path to static resource relatively to current resource file
+            $buildPath = dirname($this->cResource) . DIRECTORY_SEPARATOR . $url;
+
+            $realPath = realpath($buildPath);
+
+            // We have found static resource path
+            if ($realPath !== false) {
+                // Make static resource path relative to web-project root
+                $url = str_replace(dirname(getcwd()), '', $realPath);
+
+                // Build path to static resource handler
+                return 'url("/' . $this->id . '/?p=' . $url . '")';
+            } else {
+                throw new ResourceNotFound($buildPath . ' in ' . $this->cResource);
+            }
         }
+
+        return $matches[0];
     }
 
     /**
