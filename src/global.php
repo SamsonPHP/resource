@@ -9,6 +9,11 @@ use samsonphp\resource\Resource;
 // Define this module identifier
 define('STATIC_RESOURCE_HANDLER', 'resourcer');
 
+// Get current project web root directory
+Resource::$webRoot = getcwd();
+// Get current project root directory
+Resource::$projectRoot = dirname(Resource::$webRoot);
+
 /**
  * Static resource path builder.
  *

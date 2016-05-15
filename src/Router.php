@@ -7,21 +7,10 @@ use samsonphp\event\Event;
 use samsonphp\resource\exception\ResourceNotFound;
 
 /**
- * Класс для определения, построения и поиска путей к ресурсам
- * системы. Класс предназначен для формирования УНИКАЛЬНЫХ URL
- * описывающих путь к ресурсу веб-приложения/модуля независимо
- * от его расположения на HDD.
+ * Resource router for serving static resource from unreachable web-root paths.
  *
- * Создавая возможность один рас описать путь вида:
- *    ИМЯ_РЕСУРСА - ИМЯ_ВЕБПРИЛОЖЕНИЯ - ИМЯ_МОДУЛЯ
- *
- * И больше не задумываться об реальном(физическом) местоположении
- * ресурса
- *
- * @package SamsonPHP
- * @author Vitaly Iegorov <vitalyiegorov@gmail.com>
- * @author Nikita Kotenko <nick.w2r@gmail.com>
- * @version 1.0
+ * @author Vitaly Iegorov <egorov@samsonos.com>
+ * @author Nikita Kotenko <kotenko@samsonos.com>
  */
 class Router extends ExternalModule
 {
@@ -30,28 +19,21 @@ class Router extends ExternalModule
 
     /** Event showing that new gather resource file was created */
     const EVENT_START_GENERATE_RESOURCES = 'resource.start.generate.resources';
-
-    /** Identifier */
-    protected $id = STATIC_RESOURCE_HANDLER;
-
     /** @var string Marker for inserting generated JS link in template */
     public $jsMarker = '</body>';
-
     /** @var string Marker for inserting generated CSS link in template */
-    public $cssMarker = '</body>';
-
+    public $cssMarker = '</head>';
     /** Cached resources path collection */
     public $cached = array();
-
     /** Collection of updated cached resources for notification of changes */
     public $updated = array();
-
+    /** Identifier */
+    protected $id = STATIC_RESOURCE_HANDLER;
     /** Pointer to processing module */
     private $currentModule;
 
     /** @var string Current processed resource */
     private $currentResource;
-
 
     /** @see ModuleConnector::init() */
     public function init(array $params = array())
@@ -114,7 +96,7 @@ class Router extends ExternalModule
                                 // Read resource file
                                 $c = file_get_contents($resource);
                                 // Rewrite url in css
-                                if ($rt == 'css') {
+                                if ($rt === 'css') {
                                     $c = preg_replace_callback('/url\s*\(\s*(\'|\")?([^\)\s\'\"]+)(\'|\")?\s*\)/i',
                                         array($this, 'src_replace_callback'), $c);
                                 }
@@ -143,39 +125,70 @@ class Router extends ExternalModule
     /**
      * Core render handler for including CSS and JS resources to html
      *
-     * @param sting $view View content
-     * @param array $data View data
+     * @param string $view View content
+     * @param array  $data View data
      *
      * @return string Processed view content
+     * @throws \samsonphp\resource\exception\ResourceNotFound
      */
-    public function renderer(&$view, $data = array(), iModule $m = null)
+    public function renderer(&$view, $data = array(), $module = null)
     {
-        $tempateId = isset($this->cached['css'][$this->system->template()]) ? $this->system->template() : 'default';
+        $templateId = isset($this->cached['css'][$this->system->template()])
+            ? $this->system->template()
+            : 'default';
 
         // Define resource urls
-        $css = url()->base() . str_replace(__SAMSON_PUBLIC_PATH, '', $this->cached['css'][$tempateId]);
-        $js = url()->base() . str_replace(__SAMSON_PUBLIC_PATH, '', $this->cached['js'][$tempateId]);
+        $css = Resource::getWebRelativePath($this->cached['css'][$templateId]);
+        $js = Resource::getWebRelativePath($this->cached['js'][$templateId]);
 
         // TODO: Прорисовка зависит от текущего модуля, сделать єто через параметр прорисовщика
         // If called from compressor
-        if ($m->id() == 'compressor') {
-            $tempateId = isset($this->cached['css'][$data['file']]) ? $data['file'] : 'default';
-            $css = url()->base() . basename($this->cached['css'][$tempateId]);
-            $js = url()->base() . basename($this->cached['js'][$tempateId]);
+        if ($module->id() == 'compressor') {
+            $templateId = isset($this->cached['css'][$data['file']]) ? $data['file'] : 'default';
+            $css = url()->base() . basename($this->cached['css'][$templateId]);
+            $js = url()->base() . basename($this->cached['js'][$templateId]);
         }
 
-        // Put css link at the end of <head> page block
-        $view = str_ireplace('</head>',
-            "\n" . '<link type="text/css" rel="stylesheet" href="' . $css . '">' . "\n" . '</head>', $view);
-
-        // Put javascript link in the end of the document
-        $view = str_ireplace($this->jsMarker,
-            "\n" . '<script async type="text/javascript" src="' . $js . '"></script>' . "\n" . $this->jsMarker,
-            $view);
-
-        //elapsed('Rendering view =)');
+        $view = $this->injectCSS($view, $css);
+        $view = $this->injectJS($view, $js);
 
         return $view;
+    }
+
+    /**
+     * Inject CSS link into view.
+     *
+     * @param string $view View code
+     * @param string $path Resource path
+     *
+     * @return string Modified view
+     */
+    protected function injectCSS($view, $path)
+    {
+        // Put css link at the end of <head> page block
+        return str_ireplace(
+            $this->cssMarker,
+            "\n" . '<link type="text/css" rel="stylesheet" href="' . $path . '">' . "\n" . $this->cssMarker,
+            $view
+        );
+    }
+
+    /**
+     * Inject JS link into view.
+     *
+     * @param string $view View code
+     * @param string $path Resource path
+     *
+     * @return string Modified view
+     */
+    protected function injectJS($view, $path)
+    {
+        // Put javascript link in the end of the document
+        return str_ireplace(
+            $this->jsMarker,
+            "\n" . '<script async type="text/javascript" src="' . $path . '"></script>' . "\n" . $this->jsMarker,
+            $view
+        );
     }
 
     /**
@@ -211,8 +224,8 @@ class Router extends ExternalModule
 
             // Build path to static resource handler
             return 'url("/' . $this->id . '/?p='
-                .Resource::getRelativePath($url, dirname($this->currentResource))
-                . '")';
+            . Resource::getProjectRelativePath($url, dirname($this->currentResource))
+            . '")';
         }
 
         return $matches[0];
