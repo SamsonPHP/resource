@@ -50,8 +50,40 @@ class Router extends ExternalModule
         $this->system->subscribe('core.rendered', array($this, 'renderer'));
     }
 
+    public function gatherResources($path)
+    {
+        // we need to read all resources at specified path
+        // we need to gather all CSS resources into one file
+        // we need to gather all LESS resources into one file
+        // we need to gather all SASS resources into one file
+        // we need to gather all COFFEE resources into one file
+        // we need to gather all JS resources into one file
+        // we need to be able to include all files separately into template in development
+        // we need handlers/events for each resource type gathered with less and our approach
+        // we have problems that our variables are splitted around modules to make this work
+        // we need to gather all files and then parse on come up with different solution
+
+    }
+
+    public function gatherResources($path)
+    {
+        // we need to read all resources at specified path
+        // we need to gather all CSS resources into one file
+        // we need to gather all LESS resources into one file
+        // we need to gather all SASS resources into one file
+        // we need to gather all COFFEE resources into one file
+        // we need to gather all JS resources into one file
+        // we need to be able to include all files separately into template in development
+        // we need handlers/events for each resource type gathered with less and our approach
+        // we have problems that our variables are splitted around modules to make this work
+        // we need to gather all files and then parse on come up with different solution
+
+    }
+
     public function generateResources($moduleList, $templatePath = 'default')
     {
+        $dir = str_replace(array('/', '.'), '_', $templatePath);
+
         // Cache main web resources
         foreach (array(array('js'), array('css', 'less'), array('coffee')) as $rts) {
             // Get first resource type as extension
@@ -78,8 +110,6 @@ class Router extends ExternalModule
 
             $file = $hash_name;
 
-            $dir = str_replace(array('/', '.'), '_', $templatePath);
-
             // If cached file does not exists
             if ($this->cache_refresh($file, true, $dir)) {
                 // Read content of resource files
@@ -89,7 +119,6 @@ class Router extends ExternalModule
                     // If this ns has resources of specified type
                     foreach ($rts as $_rt) {
                         if (isset($module->resourceMap->$_rt)) {
-                            //TODO: If you will remove & from iterator - system will fail at last element
                             foreach ($module->resourceMap->$_rt as $resource) {
                                 // Store current processing resource
                                 $this->currentResource = $resource;
@@ -98,7 +127,7 @@ class Router extends ExternalModule
                                 // Rewrite url in css
                                 if ($rt === 'css') {
                                     $c = preg_replace_callback('/url\s*\(\s*(\'|\")?([^\)\s\'\"]+)(\'|\")?\s*\)/i',
-                                        array($this, 'src_replace_callback'), $c);
+                                        array($this, 'replaceUrlCallback'), $c);
                                 }
                                 // Gather processed resource text together
                                 $content .= "\n\r" . $c;
@@ -113,7 +142,7 @@ class Router extends ExternalModule
                 // Fix updated resource file with new path to it
                 $this->updated[$rt] = $file;
 
-                // Запишем содержание нового "собранного" ресурса
+                // Create cache file
                 file_put_contents($file, $content);
             }
 
@@ -150,7 +179,7 @@ class Router extends ExternalModule
         }
 
         // Inject resource links
-        return $this->injectCSS($this->injectJS($view, $js), $css);
+        return $view = $this->injectCSS($this->injectJS($view, $js), $css);
     }
 
     /**
@@ -197,7 +226,7 @@ class Router extends ExternalModule
      * @return string Rewritten url(..) with static resource handler url
      * @throws ResourceNotFound
      */
-    public function src_replace_callback($matches)
+    public function replaceUrlCallback($matches)
     {
         // If we have found static resource path definition and its not inline
         if (array_key_exists(2, $matches) && strpos($matches[2], 'data:') === false) {
