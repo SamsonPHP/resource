@@ -2,7 +2,6 @@
 namespace samsonphp\resource;
 
 use samson\core\ExternalModule;
-use samson\core\iModule;
 use samsonphp\event\Event;
 use samsonphp\resource\exception\ResourceNotFound;
 
