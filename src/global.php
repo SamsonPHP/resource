@@ -15,10 +15,27 @@ define('STATIC_RESOURCE_HANDLER', 'resourcer');
  */
 function src($path, $module = null)
 {
-    // Define module for path building
-    $module = null === $module ? m() : (is_string($module) ? m($module):$module );
+    // Define module
+    switch (gettype($module)) {
+        case 'string': // Find module by identifier
+            $module = m($module);
+            break;
+        case 'object': // Do nothing
+            break;
+        default: // Get current module
+            $module = m();
+    }
 
-    return $module->path().DIRECTORY_SEPARATOR.ltrim($path, DIRECTORY_SEPARATOR);
+    $fullPath = rtrim($module->path(), DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.ltrim($path, DIRECTORY_SEPARATOR);
+
+    $realPath = realpath($fullPath);
+
+    // Output link to static resource handler with relative path to project root
+    if ($realPath) {
+        echo '/'.STATIC_RESOURCE_HANDLER.'/?p='.str_replace(dirname(getcwd()), '', $realPath);
+    } else {
+        throw new \samsonphp\resource\exception\ResourceNotFound($fullPath);
+    }
 }
 
 /** Collection of supported mime types */
