@@ -4,14 +4,22 @@
  * on 26.04.16 at 10:43
  */
 
+use samsonphp\resource\Resource;
+
 // Define this module identifier
 define('STATIC_RESOURCE_HANDLER', 'resourcer');
 
 /**
  * Static resource path builder.
+ *
+ * @deprecated Moving to use new samsonphp/view module an $this->src() should be used
+ *             in view file for generating paths to static resources
+ *
  * @param string $path Relative static resource module path
- * @param null|string|\samson\core\iModule Module entity for path building, if not passed current module is used
+ * @param null   $module Entity for path building, if not passed current module is used
+ *
  * @return string Static resource path
+ * @throws \samsonphp\resource\exception\ResourceNotFound
  */
 function src($path, $module = null)
 {
@@ -26,16 +34,7 @@ function src($path, $module = null)
             $module = m();
     }
 
-    $fullPath = rtrim($module->path(), DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.ltrim($path, DIRECTORY_SEPARATOR);
-
-    $realPath = realpath($fullPath);
-
-    // Output link to static resource handler with relative path to project root
-    if ($realPath) {
-        echo '/'.STATIC_RESOURCE_HANDLER.'/?p='.str_replace(dirname(getcwd()), '', $realPath);
-    } else {
-        throw new \samsonphp\resource\exception\ResourceNotFound($fullPath);
-    }
+    echo '/'.STATIC_RESOURCE_HANDLER.'/?p='. Resource::getRelativePath($path, $module->path());
 }
 
 /** Collection of supported mime types */

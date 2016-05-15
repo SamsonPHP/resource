@@ -44,10 +44,10 @@ class Router extends ExternalModule
     public $updated = array();
 
     /** Pointer to processing module */
-    private $c_module;
+    private $currentModule;
 
     /** @var string Current processed resource */
-    private $cResource;
+    private $currentResource;
 
 
     /** @see ModuleConnector::init() */
@@ -100,14 +100,14 @@ class Router extends ExternalModule
                 // Read content of resource files
                 $content = '';
                 foreach ($moduleList as $id => $module) {
-                    $this->c_module = $module;
+                    $this->currentModule = $module;
                     // If this ns has resources of specified type
                     foreach ($rts as $_rt) {
                         if (isset($module->resourceMap->$_rt)) {
                             //TODO: If you will remove & from iterator - system will fail at last element
                             foreach ($module->resourceMap->$_rt as $resource) {
                                 // Store current processing resource
-                                $this->cResource = $resource;
+                                $this->currentResource = $resource;
                                 // Read resource file
                                 $c = file_get_contents($resource);
                                 // Rewrite url in css
@@ -175,7 +175,14 @@ class Router extends ExternalModule
         return $view;
     }
 
-    /** Callback for CSS url rewriting */
+    /**
+     * Callback for CSS url(...) rewriting.
+     *
+     * @param array $matches Regular expression matches collection
+     *
+     * @return string Rewritten url(..) with static resource handler url
+     * @throws ResourceNotFound
+     */
     public function src_replace_callback($matches)
     {
         // If we have found static resource path definition and its not inline
@@ -199,21 +206,10 @@ class Router extends ExternalModule
                 $url = substr($url, 0, $getStart);
             }
 
-            // Build path to static resource relatively to current resource file
-            $buildPath = dirname($this->cResource) . DIRECTORY_SEPARATOR . $url;
-
-            $realPath = realpath($buildPath);
-
-            // We have found static resource path
-            if ($realPath !== false) {
-                // Make static resource path relative to web-project root
-                $url = str_replace(dirname(getcwd()), '', $realPath);
-
-                // Build path to static resource handler
-                return 'url("/' . $this->id . '/?p=' . $url . '")';
-            } else {
-                throw new ResourceNotFound($buildPath . ' in ' . $this->cResource);
-            }
+            // Build path to static resource handler
+            return 'url("/' . $this->id . '/?p='
+                .Resource::getRelativePath($url, dirname($this->currentResource))
+                . '")';
         }
 
         return $matches[0];
