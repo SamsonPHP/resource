@@ -7,6 +7,20 @@
 // Define this module identifier
 define('STATIC_RESOURCE_HANDLER', 'resourcer');
 
+/**
+ * Static resource path builder.
+ * @param string $path Relative static resource module path
+ * @param null|string|\samson\core\iModule Module entity for path building, if not passed current module is used
+ * @return string Static resource path
+ */
+function src($path, $module = null)
+{
+    // Define module for path building
+    $module = null === $module ? m() : (is_string($module) ? m($module):$module );
+
+    return $module->path().DIRECTORY_SEPARATOR.ltrim($path, DIRECTORY_SEPARATOR);
+}
+
 /** Collection of supported mime types */
 $mimeTypes = array(
     'css' => 'text/css',

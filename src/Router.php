@@ -49,25 +49,6 @@ class Router extends ExternalModule
     /** @var string Current processed resource */
     private $cResource;
 
-    /**
-     * Parse URL to get module name and relative path to resource
-     *
-     * @param string $url String for parsing
-     *
-     * @return array Array [0] => module name, [1]=>relative_path
-     */
-    public static function parseURL($url, & $module = null, & $path = null)
-    {
-        // If we have URL to resource router
-        if (preg_match('/resourcer\/(?<module>.+)\?p=(?<path>.+)/ui', $url, $matches)) {
-            $module = $matches['module'];
-            $path = $matches['path'];
-
-            return true;
-        } else {
-            return false;
-        }
-    }
 
     /** @see ModuleConnector::init() */
     public function init(array $params = array())
@@ -236,25 +217,5 @@ class Router extends ExternalModule
         }
 
         return $matches[0];
-    }
-
-    /**
-     * Получить уникальный URL однозначно определяющий маршрут к ресурсу
-     * веб-приложения/модуля
-     *
-     * @param string $path Путь к требуемому ресурсу вннутри веб-приложения/модуля
-     * @param string $module Имя модуля которому принадлежит ресурс
-     * @param string $app Имя веб-приложения которому принадлежит ресурс
-     *
-     * @return string Унифицированный URL для получения ресурса веб-приложения/модуля
-     */
-    public static function url($path, $_module)
-    {
-        // TODO: rewrite it
-        // Безопасно получим переданный модуль
-        $_module = s()->module($_module);
-
-        // Сформируем URL-маршрут для доступа к ресурсу
-        return url()->base() . 'resourcer/' . ($_module->id() != 'resourcer' ? $_module->id() : '') . '/?p=' . $path;
     }
 }
