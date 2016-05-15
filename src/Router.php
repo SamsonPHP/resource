@@ -34,8 +34,11 @@ class Router extends ExternalModule
     /** Identifier */
     protected $id = STATIC_RESOURCE_HANDLER;
 
-    /** @var string Marker for inserting generated javascript link */
-    public $javascriptMarker = '</body>';
+    /** @var string Marker for inserting generated JS link in template */
+    public $jsMarker = '</body>';
+
+    /** @var string Marker for inserting generated CSS link in template */
+    public $cssMarker = '</body>';
 
     /** Cached resources path collection */
     public $cached = array();
@@ -166,8 +169,8 @@ class Router extends ExternalModule
             "\n" . '<link type="text/css" rel="stylesheet" href="' . $css . '">' . "\n" . '</head>', $view);
 
         // Put javascript link in the end of the document
-        $view = str_ireplace($this->javascriptMarker,
-            "\n" . '<script type="text/javascript" src="' . $js . '"></script>' . "\n" . $this->javascriptMarker,
+        $view = str_ireplace($this->jsMarker,
+            "\n" . '<script async type="text/javascript" src="' . $js . '"></script>' . "\n" . $this->jsMarker,
             $view);
 
         //elapsed('Rendering view =)');
