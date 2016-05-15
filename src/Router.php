@@ -15,9 +15,9 @@ class Router extends ExternalModule
 {
     /** Event showing that new gather resource file was created */
     const EVENT_CREATED = 'resource.created';
-
     /** Event showing that new gather resource file was created */
     const EVENT_START_GENERATE_RESOURCES = 'resource.start.generate.resources';
+
     /** @var string Marker for inserting generated JS link in template */
     public $jsMarker = '</body>';
     /** @var string Marker for inserting generated CSS link in template */
@@ -26,11 +26,12 @@ class Router extends ExternalModule
     public $cached = array();
     /** Collection of updated cached resources for notification of changes */
     public $updated = array();
+
     /** Identifier */
     protected $id = STATIC_RESOURCE_HANDLER;
+
     /** Pointer to processing module */
     private $currentModule;
-
     /** @var string Current processed resource */
     private $currentResource;
 
@@ -124,11 +125,11 @@ class Router extends ExternalModule
     /**
      * Core render handler for including CSS and JS resources to html
      *
-     * @param string $view View content
-     * @param array  $data View data
+     * @param string $view   View content
+     * @param array  $data   View data
+     * @param null   $module Module instance
      *
      * @return string Processed view content
-     * @throws \samsonphp\resource\exception\ResourceNotFound
      */
     public function renderer(&$view, $data = array(), $module = null)
     {
@@ -142,16 +143,14 @@ class Router extends ExternalModule
 
         // TODO: Прорисовка зависит от текущего модуля, сделать єто через параметр прорисовщика
         // If called from compressor
-        if ($module->id() == 'compressor') {
+        if ($module->id() === 'compressor') {
             $templateId = isset($this->cached['css'][$data['file']]) ? $data['file'] : 'default';
             $css = url()->base() . basename($this->cached['css'][$templateId]);
             $js = url()->base() . basename($this->cached['js'][$templateId]);
         }
 
-        $view = $this->injectCSS($view, $css);
-        $view = $this->injectJS($view, $js);
-
-        return $view;
+        // Inject resource links
+        return $this->injectCSS($this->injectJS($view, $js), $css);
     }
 
     /**
