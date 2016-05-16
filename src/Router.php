@@ -65,21 +65,6 @@ class Router extends ExternalModule
 
     }
 
-    public function gatherResources($path)
-    {
-        // we need to read all resources at specified path
-        // we need to gather all CSS resources into one file
-        // we need to gather all LESS resources into one file
-        // we need to gather all SASS resources into one file
-        // we need to gather all COFFEE resources into one file
-        // we need to gather all JS resources into one file
-        // we need to be able to include all files separately into template in development
-        // we need handlers/events for each resource type gathered with less and our approach
-        // we have problems that our variables are splitted around modules to make this work
-        // we need to gather all files and then parse on come up with different solution
-
-    }
-
     public function generateResources($moduleList, $templatePath = 'default')
     {
         $dir = str_replace(array('/', '.'), '_', $templatePath);
