@@ -45,7 +45,7 @@ class Router extends ExternalModule
     public static function parseURL($url, &$module = null, &$path = null)
     {
         // If we have URL to resource router
-        if (preg_match('/'.STATIC_RESOURCE_HANDLER.'\/\?p=((\/src\/(?<module>[^\/]+)(?<path>.+))|((?<local>.+)))/ui', $url, $matches)) {
+        if (preg_match('/'.STATIC_RESOURCE_HANDLER.'\/\?p=(((\/src\/|\/vendor\/samson[^\/]+\/)(?<module>[^\/]+)(?<path>.+))|((?<local>.+)))/ui', $url, $matches)) {
             if (array_key_exists('local', $matches)) {
                 $module = 'local';
                 $path = $matches['local'];
