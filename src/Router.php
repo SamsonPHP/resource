@@ -35,6 +35,30 @@ class Router extends ExternalModule
     /** @var string Current processed resource */
     private $currentResource;
 
+    /**
+     * Parse URL to get module name and relative path to resource
+     *
+     * @param string $url String for parsing
+     *
+     * @return array Array [0] => module name, [1]=>relative_path
+     */
+    public static function parseURL($url, &$module = null, &$path = null)
+    {
+        // If we have URL to resource router
+        if (preg_match('/'.STATIC_RESOURCE_HANDLER.'\/\?p=((\/src\/(?<module>[^\/]+)(?<path>.+))|((?<local>.+)))/ui', $url, $matches)) {
+            if (array_key_exists('local', $matches)) {
+                $module = 'local';
+                $path = $matches['local'];
+            } else {
+                $module = $matches['module'];
+                $path = $matches['path'];
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     /** @see ModuleConnector::init() */
     public function init(array $params = array())
     {
