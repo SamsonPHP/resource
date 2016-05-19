@@ -204,7 +204,7 @@ class Router extends ExternalModule
         // Put css link at the end of <head> page block
         return str_ireplace(
             $this->cssMarker,
-            "\n" . '<link type="text/css" rel="stylesheet" href="' . $path . '">' . "\n" . $this->cssMarker,
+            "\n" . '<link type="text/css" rel="stylesheet" property="stylesheet" href="' . $path . '">' . "\n" . $this->cssMarker,
             $view
         );
     }
