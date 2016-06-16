@@ -16,7 +16,7 @@
     }
   ],
   "require": {
-    "samsonos/php_core": "*",
+    "samsonos/php_core": "1.*",
     "samsonphp/event": "1.*"
   },
   "replace": {
