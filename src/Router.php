@@ -1,6 +1,7 @@
 <?php
 namespace samsonphp\resource;
 
+use Aws\CloudFront\Exception\Exception;
 use samson\core\ExternalModule;
 use samsonphp\event\Event;
 use samsonphp\resource\exception\ResourceNotFound;
@@ -249,19 +250,24 @@ class Router extends ExternalModule
             }
 
             // Remove possible GET parameters from resource path
-            if (($getStart = stripos($url, '?')) !== false) {
+            if (($getStart = strpos($url, '?')) !== false) {
                 $url = substr($url, 0, $getStart);
             }
 
             // Remove possible HASH parameters from resource path
-            if (($getStart = stripos($url, '#')) !== false) {
+            if (($getStart = strpos($url, '#')) !== false) {
                 $url = substr($url, 0, $getStart);
             }
 
+            // Try to find resource and output full error
+            try {
+                $path = Resource::getProjectRelativePath($url, dirname($this->currentResource));
+            } catch (ResourceNotFound $e) {
+                throw new ResourceNotFound('Cannot find resource "'.$url.'" in "'.$this->currentResource.'"');
+            }
+
             // Build path to static resource handler
-            return 'url("/' . $this->id . '/?p='
-            . Resource::getProjectRelativePath($url, dirname($this->currentResource))
-            . '")';
+            return 'url("/' . $this->id . '/?p=' . $path . '")';
         }
 
         return $matches[0];
