@@ -67,6 +67,7 @@ class Router extends ExternalModule
 
         $moduleList = $this->system->module_stack;
 
+        // TODO: SamsonCMS does not remove its modules from this collection
         Event::fire(self::EVENT_START_GENERATE_RESOURCES, array(&$moduleList));
 
         $this->generateResources($moduleList);
@@ -85,8 +86,25 @@ class Router extends ExternalModule
         // we need to gather all JS resources into one file
         // we need to be able to include all files separately into template in development
         // we need handlers/events for each resource type gathered with less and our approach
-        // we have problems that our variables are splitted around modules to make this work
+        // we have problems that our variables are split around modules to make this work
         // we need to gather all files and then parse on come up with different solution
+
+        /**
+         * Workaround for fetching different LESS variables in different files:
+         * 1. We iterate all LESS files in this modules list.
+         * 2. We parse all variables and all values from this files(probably recursively) to
+         * count values for nested variables.
+         * 3. We iterate normally all files and create cache for each file in project cache by
+         * module/folder structure.
+         * 4. We insert values for calculated LESS variables in this compiled files by passing
+         * collection of LESS values to transpiller.
+         * 5. In dev mode we do no need to gather all in one file just output a list of compiled
+         * css files in template in gathering order. All url are "/cache/" relative.
+         * 6. We create event/handler and give other module ability to gather everything into one file.
+         * 7. We give ability to other module to minify/optimize css files.
+         * 8. We rewrite paths to static resources using current logic with validation.
+         * 9. We give other modules ability to upload this static files to 3rd party storage.
+         */
 
     }
 
