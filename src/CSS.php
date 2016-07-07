@@ -4,6 +4,7 @@
  * on 07.07.16 at 18:19
  */
 namespace samsonphp\resource;
+
 use samsonphp\resource\exception\ResourceNotFound;
 
 /**
