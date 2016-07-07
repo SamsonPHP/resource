@@ -28,6 +28,7 @@ class Router extends ExternalModule
     /** Collection of excluding scanning folder patterns */
     const EXCLUDING_FOLDERS = [
         '*/cache/*',
+        '*/tests/*',
         '*/vendor/*/vendor/*'
     ];
 
