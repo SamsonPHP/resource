@@ -22,9 +22,14 @@ class Router extends ExternalModule
     const EVENT_START_GENERATE_RESOURCES = 'resource.start.generate.resources';
     /** Event for resources preloading */
     const E_RESOURCE_PRELOAD = 'resourcer.preload';
+    /** Event for resources compiling */
+    const E_RESOURCE_COMPILE = 'resourcer.compile';
 
-    /** Supported static resource extensions */
-    const EXTENSIONS = ['css', 'js', 'less', 'sass', 'coffee', 'ts'];
+    /** Collection of excluding scanning folder patterns */
+    const EXCLUDING_FOLDERS = [
+        '*/cache/*',
+        '*/vendor/*/vendor/*'
+    ];
 
     /** @var string Marker for inserting generated JS link in template */
     public $jsMarker = '</body>';
@@ -34,6 +39,9 @@ class Router extends ExternalModule
     public $cached = array();
     /** Collection of updated cached resources for notification of changes */
     public $updated = array();
+
+    /** @var array Collection of static resources */
+    protected $resources = [];
 
     /** Identifier */
     protected $id = STATIC_RESOURCE_HANDLER;
@@ -73,8 +81,21 @@ class Router extends ExternalModule
         parent::init($params);
 
         $moduleList = $this->system->module_stack;
+        $paths = [];
 
-        $this->gatherResources($moduleList);
+        // Get a
+        $projectRoot = dirname(getcwd()).'/';
+        foreach ($moduleList as $module) {
+            if ($module->path() !== $projectRoot) {
+                $paths[] = $module->path();
+            }
+        }
+        // Add web-root
+        $paths[] = $projectRoot.'www/';
+
+        trace($paths);
+
+        $this->gatherResources($paths);
 
         // TODO: SamsonCMS does not remove its modules from this collection
         //Event::fire(self::EVENT_START_GENERATE_RESOURCES, array(&$moduleList));
@@ -88,23 +109,23 @@ class Router extends ExternalModule
     /**
      * Get path static resources list filtered by extensions.
      *
-     * @param string $path Path for static resorces scanning
-     * @param array $extensions Array of extensions for filtering
+     * @param string $path Path for static resources scanning
+     * @param string $extension Resource type
      *
      * @return array Matched static resources collection with full paths
      */
-    protected function scanFolderRecursively($path, $extensions = self::EXTENSIONS)
+    protected function scanFolderRecursively($path, $extension)
     {
         // TODO: Handle not supported cmd command(Windows)
         // TODO: Handle not supported exec()
 
         // Generate LINUX command to gather resources as this is 20 times faster
         $files = [];
+        // Scan path excluding folder patterns
         exec(
-            'find ' . $path . ' -type f -name "*.' . array_shift($extensions) . '.*" '
-            . implode(' ', array_map(function ($value) {
-                return '-o -name "*.' . $value . '"';
-            }, $extensions)),
+            'find ' . $path . ' -type f -name "*.' . $extension . '" '.implode(' ', array_map(function ($value) {
+                return '-not -path ' . $value;
+            }, self::EXCLUDING_FOLDERS)),
             $files
         );
 
@@ -115,19 +136,63 @@ class Router extends ExternalModule
     /**
      * @param \samson\core\Module[] $modules Collection of modules for static resource gathering
      */
-    public function gatherResources(array $modules)
+    public function gatherResources(array $paths)
     {
         $files = [];
 
-        // Here we need to prepare resource - gather LESS variables for example
-        foreach ($modules as $id => $module) {
-            $files[$module->path()] = $this->scanFolderRecursively($module->path());
-
-            Event::fire(self::E_RESOURCE_PRELOAD);
+        // Gather all resource files
+        foreach ($paths as $path) {
+            $files = array_filter(array_merge($this->scanFolderRecursively($path, 'less'), $files));
         }
+
+
 
         trace($files);
 
+        $timeStamps = [];
+        foreach ($files as $file) {
+            $timeStamps[$file] = filemtime($file);
+        }
+
+        // Generate resources cache stamp by hashing combined files modification timestamp
+        $cacheStamp = md5(implode('', $timeStamps));
+
+        // TODO: We need cache for list of files to check if we need to preload them by storing modified date
+
+        // Here we need to prepare resource - gather LESS variables for example
+        foreach ($files as $file) {
+
+            // Fire event for preloading resource
+            Event::fire(self::E_RESOURCE_PRELOAD, [$file, pathinfo($file, PATHINFO_EXTENSION)]);
+        }
+
+        $projectRoot = dirname(getcwd());
+
+        // Here we can compile resources
+        foreach ($files as $file) {
+
+            $extension = pathinfo($file, PATHINFO_EXTENSION);
+            $fileName = pathinfo($file, PATHINFO_FILENAME);
+
+            // Compiled resource
+            $compiled = '';
+
+            // Fire event for compiling resource
+            //Event::fire(self::E_RESOURCE_COMPILE, [$file, &$extension, &$compiled]);
+
+            // Generate cached resource path with possible new extension after compiling
+            $resource = dirname($this->cache_path.str_replace($projectRoot, '', $file)).'/'.$fileName.'.'.$extension;
+
+            // Create cache path
+            $path = dirname($resource);
+            if (!file_exists($path)) {
+                mkdir($path, 0777, true);
+            }
+
+            file_put_contents($resource, $compiled);
+
+            $this->resources[$extension][] = $resource;
+        }
 
         // we need to read all resources at specified path
         // we need to gather all CSS resources into one file
