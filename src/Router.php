@@ -40,6 +40,15 @@ class Router extends ExternalModule
     /** Collection of updated cached resources for notification of changes */
     public $updated = array();
 
+    /** Collection of registered resource types */
+    public $types = [];
+
+    /** @var array Template markers for inserting assets */
+    protected $templateMarkers = [
+        'css' => '</head>',
+        'js' => '</body>'
+    ];
+
     /** @var array Collection of static resources */
     protected $resources = [];
     /** @var array Collection of static resource URLs */
@@ -54,9 +63,20 @@ class Router extends ExternalModule
     private $currentResource;
 
     /**
+     * Register resource extension handling.
+     *
+     * @param string $type Resource extension
+     */
+    public function registerResourceType($type)
+    {
+        $this->types[] = $type;
+    }
+
+    /**
      * Parse URL to get module name and relative path to resource
      *
      * @param string $url String for parsing
+     * @deprecated
      *
      * @return array Array [0] => module name, [1]=>relative_path
      */
@@ -80,32 +100,35 @@ class Router extends ExternalModule
     /** @see ModuleConnector::init() */
     public function init(array $params = array())
     {
-        parent::init($params);
+        $this->registerResourceType('css');
+        $this->registerResourceType('js');
+
+        // Event for modification of module list
+        Event::fire(self::EVENT_START_GENERATE_RESOURCES, array(&$moduleList));
 
         $moduleList = $this->system->module_stack;
-        $paths = [];
-
-        // Get a
         $projectRoot = dirname(getcwd()).'/';
+        $paths = [$projectRoot.'www/'];
+
+        // Add module paths
         foreach ($moduleList as $module) {
             if ($module->path() !== $projectRoot) {
                 $paths[] = $module->path();
             }
         }
-        // Add web-root
-        $paths[] = $projectRoot.'www/';
 
-        trace($paths);
-
-        $this->gatherResources($paths);
-
-        // TODO: SamsonCMS does not remove its modules from this collection
-        //Event::fire(self::EVENT_START_GENERATE_RESOURCES, array(&$moduleList));
+        // Iterate all types of assets
+        foreach ($this->types as $type) {
+            $this->createAssets($paths, $type);
+        }
 
         //$this->generateResources($moduleList);
 
+        // Subscribe to core template rendering event
+        Event::subscribe('core.rendered', [$this, 'renderTemplate']);
+
         // Subscribe to core rendered event
-        $this->system->subscribe('core.rendered', array($this, 'renderer'));
+        //$this->system->subscribe('core.rendered', array($this, 'renderer'));
     }
 
     /**
@@ -137,13 +160,15 @@ class Router extends ExternalModule
     }
 
     /**
-     * @param \samson\core\Module[] $modules Collection of modules for static resource gathering
+     * Create static assets.
+     *
+     * @param array  $paths Collection of paths for gatherin resources
+     * @param string $type Resource extension
      */
-    public function gatherResources(array $paths)
+    public function createAssets(array $paths, $type)
     {
+        // Gather all resource files for this type
         $files = [];
-
-        // Gather all resource files
         foreach ($paths as $path) {
             $files = array_filter(array_merge($this->scanFolderRecursively($path, 'less'), $files));
         }
@@ -189,44 +214,42 @@ class Router extends ExternalModule
                     mkdir($path, 0777, true);
                 }
                 file_put_contents($resource, $compiled);
-            }
 
-            // Add this resource to resource collection grouped by resource type
-            $this->resources[$extension][] = $resource;
-            $this->resourceUrls[$extension][] = str_replace($wwwRoot, '', $this->cache_path).$relativePath;
+                // Add this resource to resource collection grouped by resource type
+                $this->resources[$extension][] = $resource;
+                $this->resourceUrls[$extension][] = str_replace($wwwRoot, '', $resource);
+            }
+        }
+    }
+
+    /**
+     * Template rendering handler by injecting static assets url
+     * in appropriate.
+     *
+     * @param $view
+     *
+     * @return mixed
+     */
+    public function renderTemplate(&$view)
+    {
+        foreach ($this->resourceUrls as $type => $urls) {
+            // Replace template marker by type with collection of links to resources of this type
+            $view = str_ireplace(
+                $this->templateMarkers[$type],
+                implode("\n", array_map(function($value) use ($type) {
+                    if ($type === 'css') {
+                        return '<link type="text/css" rel="stylesheet" property="stylesheet" href="' . $value . '">';
+                    } elseif ($type === 'js') {
+                        return '<script async type="text/javascript" src="' . $value . '"></script>';
+                    }
+                }, $urls)) . "\n" . $this->templateMarkers[$type],
+                $view
+            );
         }
 
-        trace($this->resourceUrls);
-
-        // we need to read all resources at specified path
-        // we need to gather all CSS resources into one file
-        // we need to gather all LESS resources into one file
-        // we need to gather all SASS resources into one file
-        // we need to gather all COFFEE resources into one file
-        // we need to gather all JS resources into one file
-        // we need to be able to include all files separately into template in development
-        // we need handlers/events for each resource type gathered with less and our approach
-        // we have problems that our variables are split around modules to make this work
-        // we need to gather all files and then parse on come up with different solution
-
-        /**
-         * Workaround for fetching different LESS variables in different files:
-         * 1. We iterate all LESS files in this modules list.
-         * 2. We parse all variables and all values from this files(probably recursively) to
-         * count values for nested variables.
-         * 3. We iterate normally all files and create cache for each file in project cache by
-         * module/folder structure.
-         * 4. We insert values for calculated LESS variables in this compiled files by passing
-         * collection of LESS values to transpiller.
-         * 5. In dev mode we do no need to gather all in one file just output a list of compiled
-         * css files in template in gathering order. All url are "/cache/" relative.
-         * 6. We create event/handler and give other module ability to gather everything into one file.
-         * 7. We give ability to other module to minify/optimize css files.
-         * 8. We rewrite paths to static resources using current logic with validation.
-         * 9. We give other modules ability to upload this static files to 3rd party storage.
-         */
-
+        return $view;
     }
+
 
     public function generateResources($moduleList, $templatePath = 'default')
     {
@@ -299,72 +322,7 @@ class Router extends ExternalModule
         }
     }
 
-    /**
-     * Core render handler for including CSS and JS resources to html
-     *
-     * @param string $view   View content
-     * @param array  $data   View data
-     * @param null   $module Module instance
-     *
-     * @return string Processed view content
-     */
-    public function renderer(&$view, $data = array(), $module = null)
-    {
-        $templateId = isset($this->cached['css'][$this->system->template()])
-            ? $this->system->template()
-            : 'default';
 
-        // Define resource urls
-        $css = array_key_exists('css', $this->cached) ? Resource::getWebRelativePath($this->cached['css'][$templateId]) : '';
-        $js = array_key_exists('js', $this->cached) ? Resource::getWebRelativePath($this->cached['js'][$templateId]) : '';
-
-        // TODO: Прорисовка зависит от текущего модуля, сделать єто через параметр прорисовщика
-        // If called from compressor
-        if ($module->id() === 'compressor') {
-            $templateId = isset($this->cached['css'][$data['file']]) ? $data['file'] : 'default';
-            $css = url()->base() . basename($this->cached['css'][$templateId]);
-            $js = url()->base() . basename($this->cached['js'][$templateId]);
-        }
-
-        // Inject resource links
-        return $view = $this->injectCSS($this->injectJS($view, $js), $css);
-    }
-
-    /**
-     * Inject CSS link into view.
-     *
-     * @param string $view View code
-     * @param string $path Resource path
-     *
-     * @return string Modified view
-     */
-    protected function injectCSS($view, $path)
-    {
-        // Put css link at the end of <head> page block
-        return str_ireplace(
-            $this->cssMarker,
-            "\n" . '<link type="text/css" rel="stylesheet" property="stylesheet" href="' . $path . '">' . "\n" . $this->cssMarker,
-            $view
-        );
-    }
-
-    /**
-     * Inject JS link into view.
-     *
-     * @param string $view View code
-     * @param string $path Resource path
-     *
-     * @return string Modified view
-     */
-    protected function injectJS($view, $path)
-    {
-        // Put javascript link in the end of the document
-        return str_ireplace(
-            $this->jsMarker,
-            "\n" . '<script async type="text/javascript" src="' . $path . '"></script>' . "\n" . $this->jsMarker,
-            $view
-        );
-    }
 
     /**
      * Callback for CSS url(...) rewriting.
