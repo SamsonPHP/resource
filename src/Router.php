@@ -3,6 +3,8 @@ namespace samsonphp\resource;
 
 use Aws\CloudFront\Exception\Exception;
 use samson\core\ExternalModule;
+use samson\core\Module;
+use samsonframework\resource\ResourceMap;
 use samsonphp\event\Event;
 use samsonphp\resource\exception\ResourceNotFound;
 
@@ -18,6 +20,11 @@ class Router extends ExternalModule
     const EVENT_CREATED = 'resource.created';
     /** Event showing that new gather resource file was created */
     const EVENT_START_GENERATE_RESOURCES = 'resource.start.generate.resources';
+    /** Event for resources preloading */
+    const E_RESOURCE_PRELOAD = 'resourcer.preload';
+
+    /** Supported static resource extensions */
+    const EXTENSIONS = ['css', 'js', 'less', 'sass', 'coffee', 'ts'];
 
     /** @var string Marker for inserting generated JS link in template */
     public $jsMarker = '</body>';
@@ -67,17 +74,56 @@ class Router extends ExternalModule
 
         $moduleList = $this->system->module_stack;
 
-        // TODO: SamsonCMS does not remove its modules from this collection
-        Event::fire(self::EVENT_START_GENERATE_RESOURCES, array(&$moduleList));
+        $this->gatherResources($moduleList);
 
-        $this->generateResources($moduleList);
+        // TODO: SamsonCMS does not remove its modules from this collection
+        //Event::fire(self::EVENT_START_GENERATE_RESOURCES, array(&$moduleList));
+
+        //$this->generateResources($moduleList);
 
         // Subscribe to core rendered event
         $this->system->subscribe('core.rendered', array($this, 'renderer'));
     }
 
-    public function gatherResources($path)
+    /**
+     * Get path static resources list filtered by extensions.
+     *
+     * @param string $path Path for static resorces scanning
+     * @param array $extensions Array of extensions for filtering
+     *
+     * @return array Matched static resources collection with full paths
+     */
+    protected function scanFolderRecursively($path, $extensions = self::EXTENSIONS)
     {
+        // TODO: Handle not supported cmd command(Windows)
+        // TODO: Handle not supported exec()
+
+        // Generate LINUX command to gather resources as this is 20 times faster
+        $files = [];
+        exec(
+            'find ' . $path . ' -type f -name "*.' . array_shift($extensions) . '.*" '
+            . implode(' ', array_map(function ($value) {
+                return '-o -name "*.' . $value . '"';
+            }, $extensions)),
+            $files
+        );
+
+        return $files;
+    }
+
+    /**
+     * @param \samson\core\Module[] $modules Collection of modules for static resource gathering
+     */
+    public function gatherResources(array $modules)
+    {
+        // Here we need to prepare resource - gather LESS variables for example
+        foreach ($modules as $id => $module) {
+            $this->scanFolderRecursively($module->path());
+            Event::fire(self::E_RESOURCE_PRELOAD);
+        }
+
+
+
         // we need to read all resources at specified path
         // we need to gather all CSS resources into one file
         // we need to gather all LESS resources into one file
@@ -195,8 +241,8 @@ class Router extends ExternalModule
             : 'default';
 
         // Define resource urls
-        $css = Resource::getWebRelativePath($this->cached['css'][$templateId]);
-        $js = Resource::getWebRelativePath($this->cached['js'][$templateId]);
+        $css = array_key_exists('css', $this->cached) ? Resource::getWebRelativePath($this->cached['css'][$templateId]) : '';
+        $js = array_key_exists('js', $this->cached) ? Resource::getWebRelativePath($this->cached['js'][$templateId]) : '';
 
         // TODO: Прорисовка зависит от текущего модуля, сделать єто через параметр прорисовщика
         // If called from compressor
