@@ -42,6 +42,8 @@ class Router extends ExternalModule
 
     /** @var array Collection of static resources */
     protected $resources = [];
+    /** @var array Collection of static resource URLs */
+    protected $resourceUrls = [];
 
     /** Identifier */
     protected $id = STATIC_RESOURCE_HANDLER;
@@ -146,6 +148,7 @@ class Router extends ExternalModule
             $files = array_filter(array_merge($this->scanFolderRecursively($path, 'less'), $files));
         }
 
+        // Create resources timestamps
         $timeStamps = [];
         foreach ($files as $file) {
             $timeStamps[$file] = filemtime($file);
@@ -162,19 +165,21 @@ class Router extends ExternalModule
             Event::fire(self::E_RESOURCE_PRELOAD, [$file, pathinfo($file, PATHINFO_EXTENSION)]);
         }
 
-        $projectRoot = dirname(getcwd());
+        $wwwRoot = getcwd();
+        $projectRoot = dirname($wwwRoot).'/';
 
         // Here we can compile resources
         foreach ($files as $file) {
             $extension = pathinfo($file, PATHINFO_EXTENSION);
             $fileName = pathinfo($file, PATHINFO_FILENAME);
+            $relativePath = str_replace($projectRoot, '', $file);
 
             // Compiled resource
             $compiled = '';
             Event::fire(self::E_RESOURCE_COMPILE, [$file, &$extension, &$compiled]);
 
             // Generate cached resource path with possible new extension after compiling
-            $resource = dirname($this->cache_path.str_replace($projectRoot, '', $file)).'/'.$fileName.'.'.$extension;
+            $resource = dirname($this->cache_path.$relativePath).'/'.$fileName.'.'.$extension;
 
             // Create folder structure and file only if it is not empty
             if (strlen($compiled)) {
@@ -188,7 +193,10 @@ class Router extends ExternalModule
 
             // Add this resource to resource collection grouped by resource type
             $this->resources[$extension][] = $resource;
+            $this->resourceUrls[$extension][] = str_replace($wwwRoot, '', $this->cache_path).$relativePath;
         }
+
+        trace($this->resourceUrls);
 
         // we need to read all resources at specified path
         // we need to gather all CSS resources into one file
