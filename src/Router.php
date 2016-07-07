@@ -121,6 +121,7 @@ class Router extends ExternalModule
 
         // Generate LINUX command to gather resources as this is 20 times faster
         $files = [];
+
         // Scan path excluding folder patterns
         exec(
             'find ' . $path . ' -type f -name "*.' . $extension . '" '.implode(' ', array_map(function ($value) {
@@ -145,10 +146,6 @@ class Router extends ExternalModule
             $files = array_filter(array_merge($this->scanFolderRecursively($path, 'less'), $files));
         }
 
-
-
-        trace($files);
-
         $timeStamps = [];
         foreach ($files as $file) {
             $timeStamps[$file] = filemtime($file);
@@ -161,7 +158,6 @@ class Router extends ExternalModule
 
         // Here we need to prepare resource - gather LESS variables for example
         foreach ($files as $file) {
-
             // Fire event for preloading resource
             Event::fire(self::E_RESOURCE_PRELOAD, [$file, pathinfo($file, PATHINFO_EXTENSION)]);
         }
@@ -170,27 +166,27 @@ class Router extends ExternalModule
 
         // Here we can compile resources
         foreach ($files as $file) {
-
             $extension = pathinfo($file, PATHINFO_EXTENSION);
             $fileName = pathinfo($file, PATHINFO_FILENAME);
 
             // Compiled resource
             $compiled = '';
-
-            // Fire event for compiling resource
-            //Event::fire(self::E_RESOURCE_COMPILE, [$file, &$extension, &$compiled]);
+            Event::fire(self::E_RESOURCE_COMPILE, [$file, &$extension, &$compiled]);
 
             // Generate cached resource path with possible new extension after compiling
             $resource = dirname($this->cache_path.str_replace($projectRoot, '', $file)).'/'.$fileName.'.'.$extension;
 
-            // Create cache path
-            $path = dirname($resource);
-            if (!file_exists($path)) {
-                mkdir($path, 0777, true);
+            // Create folder structure and file only if it is not empty
+            if (strlen($compiled)) {
+                // Create cache path
+                $path = dirname($resource);
+                if (!file_exists($path)) {
+                    mkdir($path, 0777, true);
+                }
+                file_put_contents($resource, $compiled);
             }
 
-            file_put_contents($resource, $compiled);
-
+            // Add this resource to resource collection grouped by resource type
             $this->resources[$extension][] = $resource;
         }
 
