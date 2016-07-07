@@ -108,7 +108,8 @@ class Router extends ExternalModule
             $files
         );
 
-        return $files;
+        // TODO: Why some paths have double slashes? Investigate speed of realpath, maybe // changing if quicker
+        return array_map('realpath', $files);
     }
 
     /**
@@ -116,12 +117,16 @@ class Router extends ExternalModule
      */
     public function gatherResources(array $modules)
     {
+        $files = [];
+
         // Here we need to prepare resource - gather LESS variables for example
         foreach ($modules as $id => $module) {
-            $this->scanFolderRecursively($module->path());
+            $files[$module->path()] = $this->scanFolderRecursively($module->path());
+
             Event::fire(self::E_RESOURCE_PRELOAD);
         }
 
+        trace($files);
 
 
         // we need to read all resources at specified path
