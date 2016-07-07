@@ -16,6 +16,10 @@ use samsonphp\resource\exception\ResourceNotFound;
  */
 class Router extends ExternalModule
 {
+    /** @deprecated Use E_MODULES */
+    const EVENT_START_GENERATE_RESOURCES = 'resourcer.modulelist';
+    /** Event for modifying modules */
+    const E_MODULES = 'resourcer.modulelist';
     /** Event for resources preloading */
     const E_RESOURCE_PRELOAD = 'resourcer.preload';
     /** Event for resources compiling */
@@ -55,7 +59,7 @@ class Router extends ExternalModule
         $paths = [$projectRoot.'www/'];
 
         // Event for modification of module list
-        Event::fire(self::EVENT_START_GENERATE_RESOURCES, array(&$moduleList));
+        Event::fire(self::E_MODULES, array(&$moduleList));
 
         // Add module paths
         foreach ($moduleList as $module) {
