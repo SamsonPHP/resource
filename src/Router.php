@@ -97,43 +97,6 @@ class Router extends ExternalModule
     }
 
     /**
-     * Get path static resources list filtered by extensions.
-     *
-     * @param array $paths Paths for static resources scanning
-     * @param array $extensions Resource type
-     *
-     * @return array Matched static resources collection with full paths
-     */
-    protected function scanFolderRecursively(array $paths, $extensions)
-    {
-        // TODO: Handle not supported cmd command(Windows)
-        // TODO: Handle not supported exec()
-
-        // Generate LINUX command to gather resources as this is 20 times faster
-        $files = [];
-
-        $excludeFolders = implode(' ', array_map(function ($value) {
-            return '-not -path ' . $value.' ';
-        }, self::EXCLUDING_FOLDERS));
-
-        // Get first type
-        $firstType = array_shift($extensions);
-
-        // Generate other types
-        $types = implode(' ', array_map(function ($value) use ($excludeFolders){
-            return '-o -name "*.' . $value . '" '.$excludeFolders;
-        }, $extensions));
-
-        $command = 'find ' . implode(' ', $paths) . ' -type f -name "*.' . $firstType . '" '.$excludeFolders.$types;
-
-        // Scan path excluding folder patterns
-        exec($command, $files);
-
-        // TODO: Why some paths have double slashes? Investigate speed of realpath, maybe // changing if quicker
-        return array_map('realpath', $files);
-    }
-
-    /**
      * Create static assets.
      *
      * @param array  $files Collection of paths for gathering resources
