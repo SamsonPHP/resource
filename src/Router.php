@@ -18,6 +18,16 @@ class Router extends ExternalModule
 {
     /** @deprecated Use E_MODULES */
     const EVENT_START_GENERATE_RESOURCES = 'resourcer.modulelist';
+
+    /** Assets types */
+    const T_CSS = 'css';
+    const T_LESS = 'less';
+    const T_SCSS = 'scss';
+    const T_SASS = 'sass';
+    const T_JS = 'js';
+    const T_TS = 'ts';
+    const T_COFFEE = 'coffee';
+
     /** Event for modifying modules */
     const E_MODULES = 'resourcer.modulelist';
     /** Event for resources preloading */
@@ -26,7 +36,7 @@ class Router extends ExternalModule
     const E_RESOURCE_COMPILE = 'resourcer.compile';
 
     /** Collection of registered resource types */
-    protected $types = ['less', 'css', 'js', 'coffee', 'ts'];
+    protected $types = [self::T_CSS, self::T_JS, self::T_LESS, self::T_SCSS, self::T_SASS, self::T_COFFEE, self::T_TS];
 
     /** @var array Assets cache */
     protected $cache = [];
