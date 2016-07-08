@@ -19,10 +19,14 @@ class Router extends ExternalModule
     /** @deprecated Use E_MODULES */
     const EVENT_START_GENERATE_RESOURCES = 'resourcer.modulelist';
 
+    /** @deprecated Identifier */
+    protected $id = STATIC_RESOURCE_HANDLER;
+
     /** Event for modifying modules */
     const E_MODULES = 'resourcer.modulelist';
     /** Event for resources preloading */
     const E_RESOURCE_PRELOAD = 'resourcer.preload';
+
     /** Event for resources compiling */
     const E_RESOURCE_COMPILE = 'resourcer.compile';
 
@@ -33,7 +37,6 @@ class Router extends ExternalModule
     const T_SASS = 'sass';
     const T_JS = 'js';
     const T_TS = 'ts';
-
     const T_COFFEE = 'coffee';
 
     /** Assets converter */
@@ -66,14 +69,11 @@ class Router extends ExternalModule
         'css' => '</head>',
         'js' => '</body>'
     ];
-
     /** @var array Collection of static resources */
     protected $resources = [];
+
     /** @var array Collection of static resource URLs */
     protected $resourceUrls = [];
-
-    /** Identifier */
-    protected $id = STATIC_RESOURCE_HANDLER;
 
     /** @see ModuleConnector::init() */
     public function init(array $params = array())
