@@ -19,6 +19,13 @@ class Router extends ExternalModule
     /** @deprecated Use E_MODULES */
     const EVENT_START_GENERATE_RESOURCES = 'resourcer.modulelist';
 
+    /** Event for modifying modules */
+    const E_MODULES = 'resourcer.modulelist';
+    /** Event for resources preloading */
+    const E_RESOURCE_PRELOAD = 'resourcer.preload';
+    /** Event for resources compiling */
+    const E_RESOURCE_COMPILE = 'resourcer.compile';
+
     /** Assets types */
     const T_CSS = 'css';
     const T_LESS = 'less';
@@ -26,6 +33,7 @@ class Router extends ExternalModule
     const T_SASS = 'sass';
     const T_JS = 'js';
     const T_TS = 'ts';
+
     const T_COFFEE = 'coffee';
 
     /** Assets converter */
@@ -39,15 +47,16 @@ class Router extends ExternalModule
         self::T_SASS => self::T_CSS,
     ];
 
-    /** Event for modifying modules */
-    const E_MODULES = 'resourcer.modulelist';
-    /** Event for resources preloading */
-    const E_RESOURCE_PRELOAD = 'resourcer.preload';
-    /** Event for resources compiling */
-    const E_RESOURCE_COMPILE = 'resourcer.compile';
-
     /** Collection of registered resource types */
-    protected $types = [self::T_CSS, self::T_JS, self::T_LESS, self::T_SCSS, self::T_SASS, self::T_COFFEE, self::T_TS];
+    protected $types = [
+        self::T_CSS,
+        self::T_JS,
+        self::T_LESS,
+        self::T_SCSS,
+        self::T_SASS,
+        self::T_COFFEE,
+        self::T_TS
+    ];
 
     /** @var array Assets cache */
     protected $cache = [];
