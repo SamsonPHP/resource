@@ -30,10 +30,12 @@ class CSS
      */
     public function compile($resource, $extension, &$content)
     {
-        $this->currentResource = $resource;
+        if ($extension === 'css') {
+            $this->currentResource = $resource;
 
-        // Rewrite Urls
-        $content = preg_replace_callback(self::P_URL, [$this, 'rewriteUrls'], file_get_contents($resource));
+            // Rewrite Urls
+            $content = preg_replace_callback(self::P_URL, [$this, 'rewriteUrls'], $content);
+        }
     }
 
     /**

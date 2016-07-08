@@ -33,7 +33,10 @@ class Router extends ExternalModule
     ];
 
     /** Collection of registered resource types */
-    public $types = ['css', 'less', 'js', 'coffee', 'ts'];
+    protected $types = ['less', 'css', 'js', 'coffee', 'ts'];
+
+    /** @var array Assets cache */
+    protected $cache = [];
 
     /** @var array Template markers for inserting assets */
     protected $templateMarkers = [
@@ -56,11 +59,12 @@ class Router extends ExternalModule
         Event::subscribe(self::E_RESOURCE_COMPILE, [new CSS(), 'compile']);
 
         $moduleList = $this->system->module_stack;
-        $projectRoot = dirname(getcwd()).'/';
-        $paths = [$projectRoot.'www/'];
+        $paths = [];
 
         // Event for modification of module list
         Event::fire(self::E_MODULES, array(&$moduleList));
+
+        $projectRoot = dirname(getcwd()).'/';
 
         // Add module paths
         foreach ($moduleList as $module) {
@@ -68,6 +72,7 @@ class Router extends ExternalModule
                 $paths[] = $module->path();
             }
         }
+        $paths[] = getcwd();
 
         // Iterate all types of assets
         foreach ($this->types as $type) {
@@ -81,12 +86,12 @@ class Router extends ExternalModule
     /**
      * Get path static resources list filtered by extensions.
      *
-     * @param string $path Path for static resources scanning
+     * @param array $path Paths for static resources scanning
      * @param string $extension Resource type
      *
      * @return array Matched static resources collection with full paths
      */
-    protected function scanFolderRecursively($path, $extension)
+    protected function scanFolderRecursively(array $paths, $extension)
     {
         // TODO: Handle not supported cmd command(Windows)
         // TODO: Handle not supported exec()
@@ -96,7 +101,7 @@ class Router extends ExternalModule
 
         // Scan path excluding folder patterns
         exec(
-            'find ' . $path . ' -type f -name "*.' . $extension . '" '.implode(' ', array_map(function ($value) {
+            'find ' . implode(' ', $paths) . ' -type f -name "*.' . $extension . '" '.implode(' ', array_map(function ($value) {
                 return '-not -path ' . $value;
             }, self::EXCLUDING_FOLDERS)),
             $files
@@ -106,66 +111,83 @@ class Router extends ExternalModule
         return array_map('realpath', $files);
     }
 
-    /**
-     * Create static assets.
-     *
-     * @param array  $paths Collection of paths for gatherin resources
-     * @param string $type Resource extension
-     */
-    public function createAssets(array $paths, $type)
+    private function getAssetPathData($resource, $extension = null)
     {
-        // Gather all resource files for this type
-        $files = [];
-        foreach ($paths as $path) {
-            $files = array_filter(array_merge($this->scanFolderRecursively($path, $type), $files));
-        }
-
-        // Create resources timestamps
-        $timeStamps = [];
-        foreach ($files as $file) {
-            $timeStamps[$file] = filemtime($file);
-        }
-
-        // Generate resources cache stamp by hashing combined files modification timestamp
-        $cacheStamp = md5(implode('', $timeStamps));
-
-        // TODO: We need cache for list of files to check if we need to preload them by storing modified date
-
-        // Here we need to prepare resource - gather LESS variables for example
-        foreach ($files as $file) {
-            // Fire event for preloading resource
-            Event::fire(self::E_RESOURCE_PRELOAD, [$file, pathinfo($file, PATHINFO_EXTENSION)]);
+        $extension = $extension === null ? pathinfo($resource, PATHINFO_EXTENSION) : $extension;
+        switch ($extension) {
+            case 'css':
+            case 'less':
+            case 'scss':
+            case 'sass': $extension = 'css'; break;
+            case 'ts':
+            case 'cofee': $extension = 'js'; break;
         }
 
         $wwwRoot = getcwd();
         $projectRoot = dirname($wwwRoot).'/';
+        $relativePath = str_replace($projectRoot, '', $resource);
 
-        // Here we can compile resources
-        foreach ($files as $file) {
+        $fileName = pathinfo($resource, PATHINFO_FILENAME);
+
+        return dirname($this->cache_path.$relativePath).'/'.$fileName.'.'.$extension;
+    }
+
+    /**
+     * Create static assets.
+     *
+     * @param array  $paths Collection of paths for gathering resources
+     * @param string $type Resource extension
+     */
+    public function createAssets(array $paths, $type)
+    {
+        $wwwRoot = getcwd();
+
+        $assets = [];
+
+        // Scan folder and gather
+        foreach ($this->scanFolderRecursively($paths, $type) as $file) {
+            // Generate cached resource path with possible new extension after compiling
+            $assets[$file] = $this->getAssetPathData($file, $type);
+            $extension = pathinfo($assets[$file], PATHINFO_EXTENSION);
+
+            // If cached assets was modified or new
+            if (!file_exists($assets[$file]) || filemtime($file) !== filemtime($assets[$file])) {
+                // Read asset content
+                $this->cache[$file] = file_get_contents($file);
+
+                // Fire event for analyzing resource
+                Event::fire(self::E_RESOURCE_PRELOAD, [$file, pathinfo($file, PATHINFO_EXTENSION), &$this->cache[$file]]);
+            } else {
+                // Add this resource to resource collection grouped by resource type
+                $this->resources[$extension][] = $assets[$file];
+                $this->resourceUrls[$extension][] = str_replace($wwwRoot, '', $assets[$file]);
+            }
+        }
+
+        $wwwRoot = getcwd();
+        foreach ($this->cache as $file => $content) {
             $extension = pathinfo($file, PATHINFO_EXTENSION);
-            $fileName = pathinfo($file, PATHINFO_FILENAME);
-            $relativePath = str_replace($projectRoot, '', $file);
 
-            // Compiled resource
-            $compiled = '';
+            $compiled = $content;
             Event::fire(self::E_RESOURCE_COMPILE, [$file, &$extension, &$compiled]);
 
-            // Generate cached resource path with possible new extension after compiling
-            $resource = dirname($this->cache_path.$relativePath).'/'.$fileName.'.'.$extension;
-
             // Create folder structure and file only if it is not empty
-            if (strlen($compiled)) {
-                // Create cache path
-                $path = dirname($resource);
-                if (!file_exists($path)) {
-                    mkdir($path, 0777, true);
-                }
-                file_put_contents($resource, $compiled);
+            $resource = $this->getAssetPathData($file, $extension);
 
-                // Add this resource to resource collection grouped by resource type
-                $this->resources[$extension][] = $resource;
-                $this->resourceUrls[$extension][] = str_replace($wwwRoot, '', $resource);
+            // Create cache path
+            $path = dirname($resource);
+            if (!file_exists($path)) {
+                mkdir($path, 0777, true);
             }
+
+            file_put_contents($resource, $compiled);
+
+            // Sync cached file with source file
+            touch($resource, filemtime($file));
+
+            // Add this resource to resource collection grouped by resource type
+            $this->resources[$extension][] = $resource;
+            $this->resourceUrls[$extension][] = str_replace($wwwRoot, '', $resource);
         }
     }
 
