@@ -206,7 +206,7 @@ class Router extends ExternalModule
                     if ($type === 'css') {
                         return '<link type="text/css" rel="stylesheet" property="stylesheet" href="' . $value . '">';
                     } elseif ($type === 'js') {
-                        return '<script async type="text/javascript" src="' . $value . '"></script>';
+                        return '<script type="text/javascript" src="' . $value . '"></script>';
                     }
                 }, $urls)) . "\n" . $this->templateMarkers[$type],
                 $view
