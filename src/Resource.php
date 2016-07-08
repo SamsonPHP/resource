@@ -43,28 +43,21 @@ class Resource
      */
     public static function scan(array $paths, array $extensions, array $excludeFolders = self::EXCLUDING_FOLDERS)
     {
-        // TODO: Handle not supported cmd command(Windows)
-        // TODO: Handle not supported exec()
-
         // Generate LINUX command to gather resources as this is 20 times faster
         $files = [];
 
-        $excludeFolders = implode(' ', array_map(function ($value) {
+        // Generate exclusion conditions
+        $exclude = implode(' ', array_map(function ($value) {
             return '-not -path ' . $value.' ';
         }, $excludeFolders));
 
-        // Get first type
-        $firstType = array_shift($extensions);
-
         // Generate other types
-        $types = implode(' ', array_map(function ($value) use ($excludeFolders){
-            return '-o -name "*.' . $value . '" '.$excludeFolders;
+        $filters = implode('-o ', array_map(function ($value) use ($exclude) {
+            return '-name "*.' . $value . '" '.$exclude;
         }, $extensions));
 
-        $command = 'find ' . implode(' ', $paths) . ' -type f -name "*.' . $firstType . '" '.$excludeFolders.$types;
-
         // Scan path excluding folder patterns
-        exec($command, $files);
+        exec('find ' . implode(' ', $paths) . ' -type f '.$filters, $files);
 
         // TODO: Why some paths have double slashes? Investigate speed of realpath, maybe // changing if quicker
         return array_map('realpath', $files);
