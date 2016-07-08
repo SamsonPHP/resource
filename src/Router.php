@@ -28,6 +28,17 @@ class Router extends ExternalModule
     const T_TS = 'ts';
     const T_COFFEE = 'coffee';
 
+    /** Assets converter */
+    const CONVERTER = [
+        self::T_JS => self::T_JS,
+        self::T_TS => self::T_JS,
+        self::T_COFFEE => self::T_JS,
+        self::T_CSS => self::T_CSS,
+        self::T_LESS => self::T_CSS,
+        self::T_SCSS => self::T_CSS,
+        self::T_SASS => self::T_CSS,
+    ];
+
     /** Event for modifying modules */
     const E_MODULES = 'resourcer.modulelist';
     /** Event for resources preloading */
