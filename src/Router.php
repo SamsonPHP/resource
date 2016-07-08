@@ -74,41 +74,12 @@ class Router extends ExternalModule
         }
         $paths[] = getcwd();
 
-        // Iterate all types of assets
-        foreach ($this->types as $type) {
-            $this->createAssets($paths, $type);
-        }
+        $files = $this->scanFolderRecursively($paths, $this->types);
+
+        $this->createAssets($files);
 
         // Subscribe to core template rendering event
         Event::subscribe('core.rendered', [$this, 'renderTemplate']);
-    }
-
-    /**
-     * Get path static resources list filtered by extensions.
-     *
-     * @param array $path Paths for static resources scanning
-     * @param string $extension Resource type
-     *
-     * @return array Matched static resources collection with full paths
-     */
-    protected function scanFolderRecursively(array $paths, $extension)
-    {
-        // TODO: Handle not supported cmd command(Windows)
-        // TODO: Handle not supported exec()
-
-        // Generate LINUX command to gather resources as this is 20 times faster
-        $files = [];
-
-        // Scan path excluding folder patterns
-        exec(
-            'find ' . implode(' ', $paths) . ' -type f -name "*.' . $extension . '" '.implode(' ', array_map(function ($value) {
-                return '-not -path ' . $value;
-            }, self::EXCLUDING_FOLDERS)),
-            $files
-        );
-
-        // TODO: Why some paths have double slashes? Investigate speed of realpath, maybe // changing if quicker
-        return array_map('realpath', $files);
     }
 
     private function getAssetPathData($resource, $extension = null)
@@ -133,21 +104,57 @@ class Router extends ExternalModule
     }
 
     /**
+     * Get path static resources list filtered by extensions.
+     *
+     * @param array $paths Paths for static resources scanning
+     * @param array $extensions Resource type
+     *
+     * @return array Matched static resources collection with full paths
+     */
+    protected function scanFolderRecursively(array $paths, $extensions)
+    {
+        // TODO: Handle not supported cmd command(Windows)
+        // TODO: Handle not supported exec()
+
+        // Generate LINUX command to gather resources as this is 20 times faster
+        $files = [];
+
+        $excludeFolders = implode(' ', array_map(function ($value) {
+            return '-not -path ' . $value.' ';
+        }, self::EXCLUDING_FOLDERS));
+
+        // Get first type
+        $firstType = array_shift($extensions);
+
+        // Generate other types
+        $types = implode(' ', array_map(function ($value) use ($excludeFolders){
+            return '-o -name "*.' . $value . '" '.$excludeFolders;
+        }, $extensions));
+
+        $command = 'find ' . implode(' ', $paths) . ' -type f -name "*.' . $firstType . '" '.$excludeFolders.$types;
+
+        // Scan path excluding folder patterns
+        exec($command, $files);
+
+        // TODO: Why some paths have double slashes? Investigate speed of realpath, maybe // changing if quicker
+        return array_map('realpath', $files);
+    }
+
+    /**
      * Create static assets.
      *
-     * @param array  $paths Collection of paths for gathering resources
-     * @param string $type Resource extension
+     * @param array  $files Collection of paths for gathering resources
      */
-    public function createAssets(array $paths, $type)
+    public function createAssets(array $files)
     {
         $wwwRoot = getcwd();
 
         $assets = [];
 
         // Scan folder and gather
-        foreach ($this->scanFolderRecursively($paths, $type) as $file) {
+        foreach ($files as $file) {
             // Generate cached resource path with possible new extension after compiling
-            $assets[$file] = $this->getAssetPathData($file, $type);
+            $assets[$file] = $this->getAssetPathData($file);
             $extension = pathinfo($assets[$file], PATHINFO_EXTENSION);
 
             // If cached assets was modified or new
