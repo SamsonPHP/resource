@@ -25,13 +25,6 @@ class Router extends ExternalModule
     /** Event for resources compiling */
     const E_RESOURCE_COMPILE = 'resourcer.compile';
 
-    /** Collection of excluding scanning folder patterns */
-    const EXCLUDING_FOLDERS = [
-        '*/cache/*',
-        '*/tests/*',
-        '*/vendor/*/vendor/*'
-    ];
-
     /** Collection of registered resource types */
     protected $types = ['less', 'css', 'js', 'coffee', 'ts'];
 
@@ -74,7 +67,7 @@ class Router extends ExternalModule
         }
         $paths[] = getcwd();
 
-        $files = $this->scanFolderRecursively($paths, $this->types);
+        $files = Resource::scan($paths, $this->types);
 
         $this->createAssets($files);
 

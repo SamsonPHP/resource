@@ -14,11 +14,61 @@ use samsonphp\resource\exception\ResourceNotFound;
  */
 class Resource
 {
+    /** Collection of excluding scanning folder patterns */
+    const EXCLUDING_FOLDERS = [
+        '*/cache/*',
+        '*/tests/*',
+        '*/vendor/*/vendor/*'
+    ];
+
     /** @var string Full path to project web root directory */
     public static $webRoot;
 
     /** @var string Full path to project root directory */
     public static $projectRoot;
+
+    /**
+     * Recursively scan collection of paths to find assets with passed
+     * extensions. Method is based on linux find command so this method
+     * can face difficulties on other OS.
+     *
+     * TODO: Add windows support
+     * TODO: Check if CMD commands can be executed
+     *
+     * @param array $paths      Paths for files scanning
+     * @param array $extensions File extension filter
+     * @param array $excludeFolders Path patterns for exluding
+     *
+     * @return array Found files
+     */
+    public static function scan(array $paths, array $extensions, array $excludeFolders = self::EXCLUDING_FOLDERS)
+    {
+        // TODO: Handle not supported cmd command(Windows)
+        // TODO: Handle not supported exec()
+
+        // Generate LINUX command to gather resources as this is 20 times faster
+        $files = [];
+
+        $excludeFolders = implode(' ', array_map(function ($value) {
+            return '-not -path ' . $value.' ';
+        }, $excludeFolders));
+
+        // Get first type
+        $firstType = array_shift($extensions);
+
+        // Generate other types
+        $types = implode(' ', array_map(function ($value) use ($excludeFolders){
+            return '-o -name "*.' . $value . '" '.$excludeFolders;
+        }, $extensions));
+
+        $command = 'find ' . implode(' ', $paths) . ' -type f -name "*.' . $firstType . '" '.$excludeFolders.$types;
+
+        // Scan path excluding folder patterns
+        exec($command, $files);
+
+        // TODO: Why some paths have double slashes? Investigate speed of realpath, maybe // changing if quicker
+        return array_map('realpath', $files);
+    }
 
     /**
      * Build relative path to static resource relatively to web root path.
