@@ -26,9 +26,10 @@ class Router extends ExternalModule
     const E_MODULES = 'resourcer.modulelist';
     /** Event for resources preloading */
     const E_RESOURCE_PRELOAD = 'resourcer.preload';
-
     /** Event for resources compiling */
     const E_RESOURCE_COMPILE = 'resourcer.compile';
+    /** Event when recourse management is finished */
+    const E_FINISHED = 'resourcer.finished';
 
     /** Assets types */
     const T_CSS = 'css';
@@ -100,6 +101,9 @@ class Router extends ExternalModule
         $files = Resource::scan($paths, $this->types);
 
         $this->createAssets($files);
+
+        // Fire completion event
+        Event::fire(self::E_FINISHED);
 
         // Subscribe to core template rendering event
         Event::subscribe('core.rendered', [$this, 'renderTemplate']);

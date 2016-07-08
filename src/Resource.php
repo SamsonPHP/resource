@@ -37,7 +37,7 @@ class Resource
      *
      * @param array $paths      Paths for files scanning
      * @param array $extensions File extension filter
-     * @param array $excludeFolders Path patterns for exluding
+     * @param array $excludeFolders Path patterns for excluding
      *
      * @return array Found files
      */
