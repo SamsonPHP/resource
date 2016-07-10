@@ -44,6 +44,8 @@ class FileManager implements FileManagerInterface
      * Create folder.
      *
      * @param string $path Full path to asset
+     *
+     * @throws \Exception
      */
     public function mkdir($path)
     {

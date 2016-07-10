@@ -116,6 +116,7 @@ class ResourceManager
         foreach ($assets as $asset) {
             $cache[$asset] = $this->analyzeAsset($asset);
         }
+        $cache = array_filter($cache);
 
         // Iterate invalid assets
         foreach ($cache as $file => $content) {
@@ -216,8 +217,8 @@ class ResourceManager
     protected function isValid($asset, $cachedAsset)
     {
         // If cached asset does not exists or is invalid
-        return $this->fileManager->exists($cachedAsset) === false
-        || $this->fileManager->lastModified($cachedAsset) !== $this->fileManager->lastModified($asset);
+        return $this->fileManager->exists($cachedAsset) !== false
+        && $this->fileManager->lastModified($cachedAsset) === $this->fileManager->lastModified($asset);
     }
 
     /**

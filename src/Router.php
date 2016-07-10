@@ -101,6 +101,9 @@ class Router extends ExternalModule
         Event::subscribe('core.rendered', [$this, 'renderTemplate']);
 
         $resourceManager = new ResourceManager(new FileManager());
+        $resourceManager::$cacheRoot = $this->cache_path;
+        $resourceManager::$webRoot = getcwd();
+        $resourceManager::$projectRoot = dirname($resourceManager::$webRoot) . '/';
 
         $resourceManager->manage($this->getAssets());
 
@@ -112,7 +115,7 @@ class Router extends ExternalModule
     }
 
     /**
-     * Get asset files
+     * Get asset files from modules.
      */
     private function getAssets()
     {
