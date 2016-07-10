@@ -12,7 +12,7 @@ use samsonphp\event\Event;
  *
  * @package samsonphp\resource
  */
-class Resource
+class ResourceManager
 {
     /** Event for resources analyzing */
     const E_ANALYZE = 'resource.analyze';

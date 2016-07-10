@@ -7,7 +7,7 @@ namespace samsonphp\less\tests;
 
 use samsonphp\resource\FileManager;
 use samsonphp\resource\FileManagerInterface;
-use samsonphp\resource\Resource;
+use samsonphp\resource\ResourceManager;
 
 class ResourceTest extends \PHPUnit_Framework_TestCase
 {
@@ -21,23 +21,23 @@ class ResourceTest extends \PHPUnit_Framework_TestCase
     public function setUp()
     {
         $this->fileManager = new FileManager();
-        $this->resource = new Resource($this->fileManager);
+        $this->resource = new ResourceManager($this->fileManager);
 
         // Switch paths to testing environment
-        Resource::$excludeFolders = ['*/tests/cache/*'];
-        Resource::$projectRoot = __DIR__ . '/';
-        Resource::$webRoot = __DIR__ . '/www/';
-        Resource::$cacheRoot = __DIR__ . '/cache/';
+        ResourceManager::$excludeFolders = ['*/tests/cache/*'];
+        ResourceManager::$projectRoot = __DIR__ . '/';
+        ResourceManager::$webRoot = __DIR__ . '/www/';
+        ResourceManager::$cacheRoot = __DIR__ . '/cache/';
 
         // Remove cache folder
-        if ($this->fileManager->exists(Resource::$cacheRoot)) {
-            $this->fileManager->remove(Resource::$cacheRoot);
+        if ($this->fileManager->exists(ResourceManager::$cacheRoot)) {
+            $this->fileManager->remove(ResourceManager::$cacheRoot);
         }
 
         // Create files
         for ($i = 1; $i < 3; $i++) {
             $parent = implode('/', array_fill(0, $i, 'folder'));
-            foreach (Resource::TYPES as $type) {
+            foreach (ResourceManager::TYPES as $type) {
                 $file = $parent . '/test' . $i . '.' . $type;
                 $this->fileManager->write(__DIR__ . '/' . $file, '');
                 $this->files[] = $file;
@@ -51,7 +51,7 @@ class ResourceTest extends \PHPUnit_Framework_TestCase
         $this->resource->manage([__DIR__]);
 
         foreach ($this->files as $file) {
-            $this->assertFileExists(Resource::$cacheRoot . dirname($file) . '/'
+            $this->assertFileExists(ResourceManager::$cacheRoot . dirname($file) . '/'
                 . pathinfo($file, PATHINFO_FILENAME) . '.' . $this->resource->convertType($file));
         }
 

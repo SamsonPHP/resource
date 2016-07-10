@@ -71,7 +71,7 @@ class CSS
 
             // Try to find resource and output full error
             try {
-                $path = Resource::getProjectRelativePath($url, dirname($this->currentResource));
+                $path = ResourceValidator::getProjectRelativePath($url, dirname($this->currentResource));
             } catch (ResourceNotFound $e) {
                 throw new ResourceNotFound('Cannot find resource "'.$url.'" in "'.$this->currentResource.'"');
             }

@@ -48,8 +48,12 @@ class FileManager implements FileManagerInterface
     public function mkdir($path)
     {
         // Create cache path
-        if (!file_exists($path)) {
-            mkdir($path, 0777, true);
+        if (!$this->exists($path)) {
+            try {
+                mkdir($path, 0777, true);
+            } catch (\Exception $e) {
+                throw new \Exception($e->getMessage() . ' ' . $path);
+            }
         }
     }
 
