@@ -76,9 +76,9 @@ class Resource
     /**
      * Resource constructor.
      *
-     * @param FileManager $fileManager File managing class
+     * @param FileManagerInterface $fileManager File managing class
      */
-    public function __construct(FileManager $fileManager)
+    public function __construct(FileManagerInterface $fileManager)
     {
         $this->fileManager = $fileManager;
     }

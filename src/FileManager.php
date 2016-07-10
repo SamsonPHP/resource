@@ -9,7 +9,7 @@ namespace samsonphp\resource;
  * File system management class.
  * @package samsonphp\resource
  */
-class FileManager
+class FileManager implements FileManagerInterface
 {
     /**
      * Wrapper for reading file.
