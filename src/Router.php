@@ -3,25 +3,19 @@ namespace samsonphp\resource;
 
 use Aws\CloudFront\Exception\Exception;
 use samson\core\ExternalModule;
-use samson\core\Module;
-use samsonframework\resource\ResourceMap;
 use samsonphp\event\Event;
-use samsonphp\resource\exception\ResourceNotFound;
 
 /**
  * Resource router for serving static resource from unreachable web-root paths.
  *
+ * TODO: Validate old files that do not exists anymore to remove them
+ *
  * @author Vitaly Iegorov <egorov@samsonos.com>
- * @author Nikita Kotenko <kotenko@samsonos.com>
  */
 class Router extends ExternalModule
 {
     /** @deprecated Use E_MODULES */
     const EVENT_START_GENERATE_RESOURCES = 'resourcer.modulelist';
-
-    /** @deprecated Identifier */
-    protected $id = STATIC_RESOURCE_HANDLER;
-
     /** Event for modifying modules */
     const E_MODULES = 'resourcer.modulelist';
     /** Event for resources preloading */
@@ -30,7 +24,6 @@ class Router extends ExternalModule
     const E_RESOURCE_COMPILE = 'resourcer.compile';
     /** Event when recourse management is finished */
     const E_FINISHED = 'resourcer.finished';
-
     /** Assets types */
     const T_CSS = 'css';
     const T_LESS = 'less';
@@ -39,7 +32,6 @@ class Router extends ExternalModule
     const T_JS = 'js';
     const T_TS = 'ts';
     const T_COFFEE = 'coffee';
-
     /** Assets converter */
     const CONVERTER = [
         self::T_JS => self::T_JS,
@@ -50,7 +42,8 @@ class Router extends ExternalModule
         self::T_SCSS => self::T_CSS,
         self::T_SASS => self::T_CSS,
     ];
-
+    /** @deprecated Identifier */
+    protected $id = STATIC_RESOURCE_HANDLER;
     /** Collection of registered resource types */
     protected $types = [
         self::T_CSS,
@@ -109,31 +102,10 @@ class Router extends ExternalModule
         Event::subscribe('core.rendered', [$this, 'renderTemplate']);
     }
 
-    private function getAssetPathData($resource, $extension = null)
-    {
-        $extension = $extension === null ? pathinfo($resource, PATHINFO_EXTENSION) : $extension;
-        switch ($extension) {
-            case 'css':
-            case 'less':
-            case 'scss':
-            case 'sass': $extension = 'css'; break;
-            case 'ts':
-            case 'cofee': $extension = 'js'; break;
-        }
-
-        $wwwRoot = getcwd();
-        $projectRoot = dirname($wwwRoot).'/';
-        $relativePath = str_replace($projectRoot, '', $resource);
-
-        $fileName = pathinfo($resource, PATHINFO_FILENAME);
-
-        return dirname($this->cache_path.$relativePath).'/'.$fileName.'.'.$extension;
-    }
-
     /**
      * Create static assets.
      *
-     * @param array  $files Collection of paths for gathering resources
+     * @param array $files Collection of paths for gathering resources
      */
     public function createAssets(array $files)
     {
@@ -186,6 +158,27 @@ class Router extends ExternalModule
             $this->resources[$extension][] = $resource;
             $this->resourceUrls[$extension][] = str_replace($wwwRoot, '', $resource);
         }
+    }
+
+    private function getAssetPathData($resource, $extension = null)
+    {
+        $extension = $extension === null ? pathinfo($resource, PATHINFO_EXTENSION) : $extension;
+        switch ($extension) {
+            case 'css':
+            case 'less':
+            case 'scss':
+            case 'sass': $extension = 'css'; break;
+            case 'ts':
+            case 'cofee': $extension = 'js'; break;
+        }
+
+        $wwwRoot = getcwd();
+        $projectRoot = dirname($wwwRoot).'/';
+        $relativePath = str_replace($projectRoot, '', $resource);
+
+        $fileName = pathinfo($resource, PATHINFO_FILENAME);
+
+        return dirname($this->cache_path.$relativePath).'/'.$fileName.'.'.$extension;
     }
 
     /**
