@@ -90,7 +90,7 @@ class Router extends ExternalModule
      *
      * @param array $params Initialization parameters
      *
-     * @return bool True if module successfully initialized
+     * @return bool True if resource successfully initialized
      */
     public function init(array $params = array())
     {
@@ -192,12 +192,12 @@ class Router extends ExternalModule
         // Get loaded modules
         $moduleList = $this->system->module_stack;
 
-        // Event for modification of module list
+        // Event for modification of resource list
         Event::fire(self::E_MODULES, array(&$moduleList));
 
         $projectRoot = dirname(getcwd()) . '/';
 
-        // Add module paths
+        // Add resource paths
         $paths = [];
         foreach ($moduleList as $module) {
             /**
@@ -209,7 +209,7 @@ class Router extends ExternalModule
             }
         }
 
-        // TODO: This should be added by one and only local module
+        // TODO: This should be added by one and only local resource
         // Add web-root as last path
         //$paths[] = getcwd();
 

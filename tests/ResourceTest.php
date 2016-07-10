@@ -6,32 +6,38 @@
 namespace samsonphp\less\tests;
 
 use samsonphp\resource\FileManager;
+use samsonphp\resource\FileManagerInterface;
 use samsonphp\resource\Resource;
 
 class ResourceTest extends \PHPUnit_Framework_TestCase
 {
     /** @var Resource */
-    protected $module;
+    protected $resource;
+    /** @var  FileManagerInterface */
+    protected $fileManager;
 
     public function setUp()
     {
-        $fileManager = new FileManager();
-        $this->module = new Resource($fileManager);
+        $this->fileManager = new FileManager();
+        $this->resource = new Resource($this->fileManager);
+
+        // Switch paths to testing environment
         Resource::$excludeFolders = ['*/tests/cache/*'];
         Resource::$projectRoot = __DIR__ . '/';
         Resource::$webRoot = __DIR__ . '/www/';
         Resource::$cacheRoot = __DIR__ . '/cache/';
 
-        if ($fileManager->exists(Resource::$cacheRoot)) {
-            $fileManager->remove(Resource::$cacheRoot);
+        // Remove cache folder
+        if ($this->fileManager->exists(Resource::$cacheRoot)) {
+            $this->fileManager->remove(Resource::$cacheRoot);
         }
     }
 
     public function testManage()
     {
         // Run first time to generate assets
-        $this->module->manage([__DIR__]);
+        $this->resource->manage([__DIR__]);
         // Run second time to use cache
-        $this->module->manage([__DIR__]);
+        $this->resource->manage([__DIR__]);
     }
 }

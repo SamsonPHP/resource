@@ -29,11 +29,11 @@ class ModuleTest extends \PHPUnit_Framework_TestCase
 
     public function testAssets()
     {
-        //$this->module->init([]);
+        //$this->resource->init([]);
     }
 
     public function testInit()
     {
-        //$this->module->init([]);
+        //$this->resource->init([]);
     }
 }

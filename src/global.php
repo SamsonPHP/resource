@@ -6,7 +6,7 @@
 
 use samsonphp\resource\Resource;
 
-// Define this module identifier
+// Define this resource identifier
 define('STATIC_RESOURCE_HANDLER', 'resourcer');
 
 // Get current project web root directory
@@ -17,25 +17,25 @@ Resource::$projectRoot = dirname(Resource::$webRoot);
 /**
  * Static resource path builder.
  *
- * @deprecated Moving to use new samsonphp/view module an $this->src() should be used
+ * @deprecated Moving to use new samsonphp/view resource an $this->src() should be used
  *             in view file for generating paths to static resources
  *
- * @param string $path Relative static resource module path
- * @param null   $module Entity for path building, if not passed current module is used
+ * @param string $path   Relative static resource resource path
+ * @param null   $module Entity for path building, if not passed current resource is used
  *
  * @return string Static resource path
  * @throws \samsonphp\resource\exception\ResourceNotFound
  */
 function src($path, $module = null)
 {
-    // Define module
+    // Define resource
     switch (gettype($module)) {
-        case 'string': // Find module by identifier
+        case 'string': // Find resource by identifier
             $module = m($module);
             break;
         case 'object': // Do nothing
             break;
-        default: // Get current module
+        default: // Get current resource
             $module = m();
     }
 

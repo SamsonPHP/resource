@@ -28,6 +28,15 @@ class Resource
     const T_JS = 'js';
     const T_TS = 'ts';
     const T_COFFEE = 'coffee';
+    const T_JPG = 'jpg';
+    const T_JPEG = 'jpeg';
+    const T_PNG = 'png';
+    const T_GIF = 'gif';
+    const T_SVG = 'svg';
+    const T_TTF = 'ttf';
+    const T_WOFF = 'woff';
+    const T_WOFF2 = 'woff2';
+    const T_EOT = 'eot';
 
     /** Assets types collection */
     const TYPES = [
@@ -37,7 +46,16 @@ class Resource
         self::T_SASS,
         self::T_JS,
         self::T_TS,
-        self::T_COFFEE
+        self::T_COFFEE,
+        self::T_JPG,
+        self::T_JPEG,
+        self::T_PNG,
+        self::T_GIF,
+        self::T_SVG,
+        self::T_TTF,
+        self::T_WOFF,
+        self::T_WOFF2,
+        self::T_EOT,
     ];
 
     /** Assets converter */
@@ -259,7 +277,8 @@ class Resource
     protected function getAssetCachedPath($asset)
     {
         // Convert input extension
-        $extension = self::CONVERTER[pathinfo($asset, PATHINFO_EXTENSION)];
+        $extension = pathinfo($asset, PATHINFO_EXTENSION);
+        $extension = array_key_exists($extension, self::CONVERTER) ? self::CONVERTER[$extension] : $extension;
 
         // Build asset project root relative path
         $relativePath = str_replace(self::$projectRoot, '', $asset);
