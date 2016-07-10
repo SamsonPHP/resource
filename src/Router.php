@@ -84,32 +84,16 @@ class Router extends ExternalModule
         // Subscribe for CSS handling
         Event::subscribe(self::E_RESOURCE_COMPILE, [new CSS(), 'compile']);
 
-        $moduleList = $this->system->module_stack;
-        $paths = [];
+        // Subscribe to core template rendering event
+        Event::subscribe('core.rendered', [$this, 'renderTemplate']);
 
-        // Event for modification of module list
-        Event::fire(self::E_MODULES, array(&$moduleList));
-
-        $projectRoot = dirname(getcwd()).'/';
-
-        // Add module paths
-        foreach ($moduleList as $module) {
-            if ($module->path() !== $projectRoot) {
-                $paths[] = $module->path();
-            }
-        }
-        $paths[] = getcwd();
-
-        $files = Resource::scan($paths, $this->types);
-
-        $this->createAssets($files);
+        // Create assets
+        $this->createAssets($this->getAssets());
 
         // Fire completion event
         Event::fire(self::E_FINISHED);
 
-        // Subscribe to core template rendering event
-        Event::subscribe('core.rendered', [$this, 'renderTemplate']);
-
+        // Continue parent initialization
         return parent::init($params);
     }
 
@@ -179,12 +163,43 @@ class Router extends ExternalModule
             : $extension];
 
         $wwwRoot = getcwd();
-        $projectRoot = dirname($wwwRoot).'/';
+        $projectRoot = dirname($wwwRoot) . '/';
         $relativePath = str_replace($projectRoot, '', $resource);
 
         $fileName = pathinfo($resource, PATHINFO_FILENAME);
 
-        return dirname($this->cache_path.$relativePath).'/'.$fileName.'.'.$extension;
+        return dirname($this->cache_path . $relativePath) . '/' . $fileName . '.' . $extension;
+    }
+
+    /**
+     * Get asset files
+     */
+    private function getAssets()
+    {
+        // Get loaded modules
+        $moduleList = $this->system->module_stack;
+
+        // Event for modification of module list
+        Event::fire(self::E_MODULES, array(&$moduleList));
+
+        $projectRoot = dirname(getcwd()) . '/';
+
+        // Add module paths
+        $paths = [];
+        foreach ($moduleList as $module) {
+            /**
+             * We need to exclude project root because vendor folder will be scanned
+             * and all assets from there would be added.
+             */
+            if ($module->path() !== $projectRoot) {
+                $paths[] = $module->path();
+            }
+        }
+
+        // Add web-root as last path
+        $paths[] = getcwd();
+
+        return Resource::scan($paths, $this->types);
     }
 
     /**
