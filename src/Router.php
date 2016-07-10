@@ -1,7 +1,6 @@
 <?php
 namespace samsonphp\resource;
 
-use Aws\CloudFront\Exception\Exception;
 use samson\core\ExternalModule;
 use samsonphp\event\Event;
 
@@ -24,6 +23,7 @@ class Router extends ExternalModule
     const E_RESOURCE_COMPILE = 'resourcer.compile';
     /** Event when recourse management is finished */
     const E_FINISHED = 'resourcer.finished';
+
     /** Assets types */
     const T_CSS = 'css';
     const T_LESS = 'less';
@@ -32,6 +32,7 @@ class Router extends ExternalModule
     const T_JS = 'js';
     const T_TS = 'ts';
     const T_COFFEE = 'coffee';
+
     /** Assets converter */
     const CONVERTER = [
         self::T_JS => self::T_JS,
@@ -42,8 +43,10 @@ class Router extends ExternalModule
         self::T_SCSS => self::T_CSS,
         self::T_SASS => self::T_CSS,
     ];
+
     /** @deprecated Identifier */
     protected $id = STATIC_RESOURCE_HANDLER;
+
     /** Collection of registered resource types */
     protected $types = [
         self::T_CSS,
@@ -69,7 +72,13 @@ class Router extends ExternalModule
     /** @var array Collection of static resource URLs */
     protected $resourceUrls = [];
 
-    /** @see ModuleConnector::init() */
+    /**
+     * @see ModuleConnector::init()
+     *
+     * @param array $params Initialization parameters
+     *
+     * @return bool True if module successfully initialized
+     */
     public function init(array $params = array())
     {
         // Subscribe for CSS handling
@@ -100,6 +109,8 @@ class Router extends ExternalModule
 
         // Subscribe to core template rendering event
         Event::subscribe('core.rendered', [$this, 'renderTemplate']);
+
+        return parent::init($params);
     }
 
     /**
@@ -162,15 +173,10 @@ class Router extends ExternalModule
 
     private function getAssetPathData($resource, $extension = null)
     {
-        $extension = $extension === null ? pathinfo($resource, PATHINFO_EXTENSION) : $extension;
-        switch ($extension) {
-            case 'css':
-            case 'less':
-            case 'scss':
-            case 'sass': $extension = 'css'; break;
-            case 'ts':
-            case 'cofee': $extension = 'js'; break;
-        }
+        // Convert input extension
+        $extension = self::CONVERTER[$extension === null
+            ? pathinfo($resource, PATHINFO_EXTENSION)
+            : $extension];
 
         $wwwRoot = getcwd();
         $projectRoot = dirname($wwwRoot).'/';
@@ -195,7 +201,7 @@ class Router extends ExternalModule
             // Replace template marker by type with collection of links to resources of this type
             $view = str_ireplace(
                 $this->templateMarkers[$type],
-                implode("\n", array_map(function($value) use ($type) {
+                implode("\n", array_map(function ($value) use ($type) {
                     if ($type === 'css') {
                         return '<link type="text/css" rel="stylesheet" property="stylesheet" href="' . $value . '">';
                     } elseif ($type === 'js') {
