@@ -109,4 +109,38 @@ class FileManager implements FileManagerInterface
     {
         return filemtime($file);
     }
+
+    /**
+     * Recursively scan collection of paths to find files with passed
+     * extensions. Method is based on linux find command so this method
+     * can face difficulties on other OS.
+     *
+     *
+     * @param array $paths          Paths for files scanning
+     * @param array $extensions     File extension filter
+     * @param array $excludeFolders Path patterns for excluding
+     *
+     * @return array Found files
+     */
+    public function scan(array $paths, array $extensions, array $excludeFolders = [])
+    {
+        // Generate LINUX command to gather resources as this is 20 times faster
+        $files = [];
+
+        // Generate exclusion conditions
+        $exclude = implode(' ', array_map(function ($value) {
+            return '-not -path ' . $value . ' ';
+        }, $excludeFolders));
+
+        // Generate filters
+        $filters = implode('-o ', array_map(function ($value) use ($exclude) {
+            return '-name "*.' . $value . '" ' . $exclude;
+        }, $extensions));
+
+        // Scan path excluding folder patterns
+        exec('find ' . implode(' ', $paths) . ' -type f ' . $filters, $files);
+
+        // TODO: Why some paths have double slashes? Investigate speed of realpath, maybe // changing if quicker
+        return array_map('realpath', $files);
+    }
 }

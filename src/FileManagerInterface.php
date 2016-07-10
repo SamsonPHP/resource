@@ -69,4 +69,18 @@ interface FileManagerInterface
      * @return int File modification timestamp
      */
     public function lastModified($file);
+
+    /**
+     * Recursively scan collection of paths to find files with passed
+     * extensions. Method is based on linux find command so this method
+     * can face difficulties on other OS.
+     *
+     *
+     * @param array $paths          Paths for files scanning
+     * @param array $extensions     File extension filter
+     * @param array $excludeFolders Path patterns for excluding
+     *
+     * @return array Found files
+     */
+    public function scan(array $paths, array $extensions, array $excludeFolders = []);
 }

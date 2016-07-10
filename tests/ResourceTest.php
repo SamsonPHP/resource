@@ -15,6 +15,8 @@ class ResourceTest extends \PHPUnit_Framework_TestCase
     protected $resource;
     /** @var  FileManagerInterface */
     protected $fileManager;
+    /** @var array Collection of assets */
+    protected $files = [];
 
     public function setUp()
     {
@@ -31,12 +33,25 @@ class ResourceTest extends \PHPUnit_Framework_TestCase
         if ($this->fileManager->exists(Resource::$cacheRoot)) {
             $this->fileManager->remove(Resource::$cacheRoot);
         }
+
+        // Create files
+        for ($i = 1; $i < 3; $i++) {
+            $parent = implode('/', array_fill(0, $i, 'folder'));
+            foreach (Resource::TYPES as $type) {
+                $this->fileManager->write(__DIR__ . '/' . $parent . '/test' . $i . '.' . $type, '');
+            }
+        }
     }
 
     public function testManage()
     {
         // Run first time to generate assets
         $this->resource->manage([__DIR__]);
+
+        $this->assertFileExists(Resource::$cacheRoot . '/folder1/test.css');
+        $this->assertFileExists(Resource::$cacheRoot . '/folder1/folder2/test2.css');
+        $this->assertFileExists(Resource::$cacheRoot . '/folder1/folder2/test.png');
+
         // Run second time to use cache
         $this->resource->manage([__DIR__]);
     }
