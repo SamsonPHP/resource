@@ -5,17 +5,54 @@
  */
 namespace samsonphp\resource;
 
+use samsonphp\event\Event;
 use samsonphp\resource\exception\ResourceNotFound;
 
 /**
- * Static resource entity class.
+ * Resource assets management class.
  *
  * @package samsonphp\resource
  */
 class Resource
 {
+    /** Event for resources analyzing */
+    const E_ANALYZE = 'resource.analyze';
+    /** Event for resources compiling */
+    const E_COMPILE = 'resource.compile';
+
+    /** Assets types */
+    const T_CSS = 'css';
+    const T_LESS = 'less';
+    const T_SCSS = 'scss';
+    const T_SASS = 'sass';
+    const T_JS = 'js';
+    const T_TS = 'ts';
+    const T_COFFEE = 'coffee';
+
+    /** Assets types collection */
+    const TYPES = [
+        self::T_CSS,
+        self::T_LESS,
+        self::T_SCSS,
+        self::T_SASS,
+        self::T_JS,
+        self::T_TS,
+        self::T_COFFEE
+    ];
+
+    /** Assets converter */
+    const CONVERTER = [
+        self::T_JS => self::T_JS,
+        self::T_TS => self::T_JS,
+        self::T_COFFEE => self::T_JS,
+        self::T_CSS => self::T_CSS,
+        self::T_LESS => self::T_CSS,
+        self::T_SCSS => self::T_CSS,
+        self::T_SASS => self::T_CSS,
+    ];
+
     /** Collection of excluding scanning folder patterns */
-    const EXCLUDING_FOLDERS = [
+    public static $excludeFolders = [
         '*/cache/*',
         '*/tests/*',
         '*/vendor/*/vendor/*'
@@ -27,40 +64,23 @@ class Resource
     /** @var string Full path to project root directory */
     public static $projectRoot;
 
+    /** @var string Full path to project cache root directory */
+    public static $cacheRoot;
+
+    /** @var array Cached assets */
+    protected $cache = [];
+
+    /** @var array Collection of assets */
+    protected $assets = [];
+
     /**
-     * Recursively scan collection of paths to find assets with passed
-     * extensions. Method is based on linux find command so this method
-     * can face difficulties on other OS.
+     * Resource constructor.
      *
-     * TODO: Add windows support
-     * TODO: Check if CMD commands can be executed
-     *
-     * @param array $paths      Paths for files scanning
-     * @param array $extensions File extension filter
-     * @param array $excludeFolders Path patterns for excluding
-     *
-     * @return array Found files
+     * @param FileManager $fileManager File managing class
      */
-    public static function scan(array $paths, array $extensions, array $excludeFolders = self::EXCLUDING_FOLDERS)
+    public function __construct(FileManager $fileManager)
     {
-        // Generate LINUX command to gather resources as this is 20 times faster
-        $files = [];
-
-        // Generate exclusion conditions
-        $exclude = implode(' ', array_map(function ($value) {
-            return '-not -path ' . $value.' ';
-        }, $excludeFolders));
-
-        // Generate other types
-        $filters = implode('-o ', array_map(function ($value) use ($exclude) {
-            return '-name "*.' . $value . '" '.$exclude;
-        }, $extensions));
-
-        // Scan path excluding folder patterns
-        exec('find ' . implode(' ', $paths) . ' -type f '.$filters, $files);
-
-        // TODO: Why some paths have double slashes? Investigate speed of realpath, maybe // changing if quicker
-        return array_map('realpath', $files);
+        $this->fileManager = $fileManager;
     }
 
     /**
@@ -121,5 +141,158 @@ class Resource
     public static function getProjectRelativePath($relativePath, $parentPath = '')
     {
         return static::getRelativePath($relativePath, $parentPath, static::$projectRoot);
+    }
+
+    /**
+     * Create static assets.
+     *
+     * @param array $paths Collection of paths for gathering assets
+     *
+     * @return array Cached assets full paths collection
+     */
+    public function manage(array $paths)
+    {
+        $assets = self::scan($paths, self::TYPES);
+
+        // Iterate all assets for analyzing
+        $cache = [];
+        foreach ($assets as $asset) {
+            $cache[$asset] = $this->analyzeAsset($asset);
+        }
+
+        // Iterate invalid assets
+        foreach ($cache as $file => $content) {
+            $extension = pathinfo($file, PATHINFO_EXTENSION);
+
+            // Compile content
+            $compiled = $content;
+            Event::fire(self::E_COMPILE, [$file, &$extension, &$compiled]);
+
+            $asset = $this->getAssetCachedPath($file);
+            $this->fileManager->write($asset, $compiled);
+            $this->fileManager->touch($asset, $this->fileManager->lastModified($file));
+
+            $this->assets[$extension][] = $asset;
+        }
+
+        return $this->assets;
+    }
+
+    /**
+     * Recursively scan collection of paths to find assets with passed
+     * extensions. Method is based on linux find command so this method
+     * can face difficulties on other OS.
+     *
+     * TODO: Add windows support
+     * TODO: Check if CMD commands can be executed
+     *
+     * @param array $paths          Paths for files scanning
+     * @param array $extensions     File extension filter
+     * @param array $excludeFolders Path patterns for excluding
+     *
+     * @return array Found files
+     */
+    public static function scan(array $paths, array $extensions, array $excludeFolders = [])
+    {
+        // Generate LINUX command to gather resources as this is 20 times faster
+        $files = [];
+
+        // Generate exclusion conditions
+        $exclude = implode(' ', array_map(function ($value) {
+            return '-not -path ' . $value . ' ';
+        }, 0 === count($excludeFolders) ? self::$excludeFolders : $excludeFolders));
+
+        // Generate filters
+        $filters = implode('-o ', array_map(function ($value) use ($exclude) {
+            return '-name "*.' . $value . '" ' . $exclude;
+        }, $extensions));
+
+        // Scan path excluding folder patterns
+        exec('find ' . implode(' ', $paths) . ' -type f ' . $filters, $files);
+
+        // TODO: Why some paths have double slashes? Investigate speed of realpath, maybe // changing if quicker
+        return array_map('realpath', $files);
+    }
+
+    /**
+     * Analyze asset.
+     *
+     * @param string $asset Full path to asset
+     *
+     * @return string Analyzed asset content
+     */
+    protected function analyzeAsset($asset)
+    {
+        // Generate cached resource path with possible new extension after compiling
+        $cachedAsset = $this->getAssetCachedPath($asset);
+
+        $extension = pathinfo($asset, PATHINFO_EXTENSION);
+
+        // If cached assets was modified or new
+        if (!$this->isValid($asset, $cachedAsset)) {
+            // Read asset content
+            $content = $this->fileManager->read($asset);
+
+            // Fire event for analyzing resource
+            Event::fire(self::E_ANALYZE, [
+                $asset,
+                $extension,
+                &$content
+            ]);
+
+            return $content;
+        } else {
+            // Add this resource to resource collection grouped by resource type
+            $this->assets[$extension][] = $cachedAsset;
+        }
+
+        return '';
+    }
+
+    /**
+     * Get asset cached path with extension conversion.
+     *
+     * @param string $asset Asset full path
+     *
+     * @return string Full path to cached asset
+     */
+    protected function getAssetCachedPath($asset)
+    {
+        // Convert input extension
+        $extension = self::CONVERTER[pathinfo($asset, PATHINFO_EXTENSION)];
+
+        // Build asset project root relative path
+        $relativePath = str_replace(self::$projectRoot, '', $asset);
+
+        // Build full cached asset path
+        return dirname(self::$cacheRoot . $relativePath) . '/' . pathinfo($asset, PATHINFO_FILENAME) . '.' . $extension;
+    }
+
+    /**
+     * Define if asset is not valid.
+     *
+     * @param string $asset       Full path to asset
+     *
+     * @param string $cachedAsset Full path to cached asset
+     *
+     * @return bool True if cached asset is valid
+     */
+    protected function isValid($asset, $cachedAsset)
+    {
+        // If cached asset does not exists or is invalid
+        return $this->fileManager->exists($cachedAsset) === false
+        || $this->fileManager->lastModified($cachedAsset) !== $this->fileManager->lastModified($asset);
+    }
+
+    /**
+     * Get cached asset URL.
+     *
+     * @param string $cachedAsset Full path to cached asset
+     *
+     * @return mixed Cached asset URL
+     */
+    protected function getAssetCachedUrl($cachedAsset)
+    {
+        return str_replace(self::$webRoot, '', $cachedAsset);
     }
 }

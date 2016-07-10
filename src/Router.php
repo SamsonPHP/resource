@@ -18,9 +18,9 @@ class Router extends ExternalModule
     /** Event for modifying modules */
     const E_MODULES = 'resourcer.modulelist';
     /** Event for resources preloading */
-    const E_RESOURCE_PRELOAD = 'resourcer.preload';
+    const E_RESOURCE_PRELOAD = Resource::E_ANALYZE;
     /** Event for resources compiling */
-    const E_RESOURCE_COMPILE = 'resourcer.compile';
+    const E_RESOURCE_COMPILE = Resource::E_COMPILE;
     /** Event when recourse management is finished */
     const E_FINISHED = 'resourcer.finished';
 
@@ -32,6 +32,17 @@ class Router extends ExternalModule
     const T_JS = 'js';
     const T_TS = 'ts';
     const T_COFFEE = 'coffee';
+
+    /** Assets types collection */
+    const TYPES = [
+        self::T_CSS,
+        self::T_LESS,
+        self::T_SCSS,
+        self::T_SASS,
+        self::T_JS,
+        self::T_TS,
+        self::T_COFFEE
+    ];
 
     /** Assets converter */
     const CONVERTER = [
@@ -73,6 +84,8 @@ class Router extends ExternalModule
     protected $resourceUrls = [];
 
     /**
+     * Module initialization stage.
+     *
      * @see ModuleConnector::init()
      *
      * @param array $params Initialization parameters
@@ -196,8 +209,9 @@ class Router extends ExternalModule
             }
         }
 
+        // TODO: This should be added by one and only local module
         // Add web-root as last path
-        $paths[] = getcwd();
+        //$paths[] = getcwd();
 
         return Resource::scan($paths, $this->types);
     }
