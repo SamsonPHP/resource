@@ -6,7 +6,6 @@
 namespace samsonphp\resource;
 
 use samsonphp\event\Event;
-use samsonphp\resource\exception\ResourceNotFound;
 
 /**
  * Resource assets management class.
@@ -102,66 +101,6 @@ class Resource
     }
 
     /**
-     * Build relative path to static resource relatively to web root path.
-     *
-     * @param string $relativePath Relative path to static resource
-     * @param string $parentPath   Path to parent entity
-     *
-     * @return string Validated relative path to static resource relatively to web root path
-     * @throws ResourceNotFound
-     */
-    public static function getWebRelativePath($relativePath, $parentPath = '')
-    {
-        return static::getRelativePath($relativePath, $parentPath, static::$webRoot);
-    }
-
-    /**
-     * Build correct relative path to static resource using relative path and parent path.
-     *
-     * @param string $relativePath Relative path to static resource
-     * @param string $parentPath   Path to parent entity
-     * @param string $rootPath     Root path for relative path building
-     *
-     * @return string Validated relative path to static resource
-     * @throws ResourceNotFound
-     */
-    public static function getRelativePath($relativePath, $parentPath = '', $rootPath = '')
-    {
-        // If parent path if not passed - use project root path
-        $parentPath = $parentPath === '' ? static::$projectRoot : $parentPath;
-
-        // Build full path to resource from given relative path
-        $fullPath = rtrim($parentPath, DIRECTORY_SEPARATOR)
-            .DIRECTORY_SEPARATOR
-            .ltrim($relativePath, DIRECTORY_SEPARATOR);
-
-        // Make real path with out possible "../"
-        $realPath = realpath($fullPath);
-
-        // Output link to static resource handler with relative path to project root
-        if ($realPath) {
-            // Build relative path to static resource
-            return str_replace($rootPath, '', $realPath);
-        }
-
-        throw new ResourceNotFound($fullPath);
-    }
-
-    /**
-     * Build relative path to static resource relatively to project root path.
-     *
-     * @param string $relativePath Relative path to static resource
-     * @param string $parentPath   Path to parent entity
-     *
-     * @return string Validated relative path to static resource relatively to project root path
-     * @throws ResourceNotFound
-     */
-    public static function getProjectRelativePath($relativePath, $parentPath = '')
-    {
-        return static::getRelativePath($relativePath, $parentPath, static::$projectRoot);
-    }
-
-    /**
      * Create static assets.
      *
      * @param array $paths Collection of paths for gathering assets
@@ -170,7 +109,7 @@ class Resource
      */
     public function manage(array $paths)
     {
-        $assets = $this->fileManager->scan($paths, self::TYPES);
+        $assets = $this->fileManager->scan($paths, self::TYPES, self::$excludeFolders);
 
         // Iterate all assets for analyzing
         $cache = [];
@@ -240,15 +179,29 @@ class Resource
      */
     protected function getAssetCachedPath($asset)
     {
-        // Convert input extension
-        $extension = pathinfo($asset, PATHINFO_EXTENSION);
-        $extension = array_key_exists($extension, self::CONVERTER) ? self::CONVERTER[$extension] : $extension;
-
         // Build asset project root relative path
         $relativePath = str_replace(self::$projectRoot, '', $asset);
 
         // Build full cached asset path
-        return dirname(self::$cacheRoot . $relativePath) . '/' . pathinfo($asset, PATHINFO_FILENAME) . '.' . $extension;
+        return dirname(self::$cacheRoot . $relativePath) . '/'
+        . pathinfo($asset, PATHINFO_FILENAME) . '.' . $this->convertType($asset);
+    }
+
+    /**
+     * Get asset final type.
+     *
+     * @param string $asset Full asset path
+     *
+     * @return string Asset final type
+     */
+    public function convertType($asset)
+    {
+        // Convert input extension
+        $extension = pathinfo($asset, PATHINFO_EXTENSION);
+
+        return array_key_exists($extension, self::CONVERTER)
+            ? self::CONVERTER[$extension]
+            : $extension;
     }
 
     /**
