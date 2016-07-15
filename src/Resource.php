@@ -59,7 +59,7 @@ class Resource
         // Scan path excluding folder patterns
         exec('find ' . implode(' ', $paths) . ' -type f '.$filters, $files);
 
-        // Sort files alphabetically
+        // Sort files alphabeticall
         usort ($files, function($a, $b) {
             if (strpos($a, 'vendor/') !== false && strpos($b, 'vendor/') === false) {
                 return -1;
