@@ -165,7 +165,7 @@ class ResourceManager
             return $content;
         } else {
             // Add this resource to resource collection grouped by resource type
-            $this->assets[$extension][] = $cachedAsset;
+            $this->assets[$this->convertType($asset)][] = $cachedAsset;
         }
 
         return '';
@@ -219,17 +219,5 @@ class ResourceManager
         // If cached asset does not exists or is invalid
         return $this->fileManager->exists($cachedAsset) !== false
         && $this->fileManager->lastModified($cachedAsset) === $this->fileManager->lastModified($asset);
-    }
-
-    /**
-     * Get cached asset URL.
-     *
-     * @param string $cachedAsset Full path to cached asset
-     *
-     * @return mixed Cached asset URL
-     */
-    protected function getAssetCachedUrl($cachedAsset)
-    {
-        return str_replace(self::$webRoot, '', $cachedAsset);
     }
 }

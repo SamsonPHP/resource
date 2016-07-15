@@ -95,7 +95,7 @@ class Router extends ExternalModule
     public function init(array $params = array())
     {
         // Subscribe for CSS handling
-        Event::subscribe(self::E_RESOURCE_COMPILE, [new CSS(), 'compile']);
+        //Event::subscribe(self::E_RESOURCE_COMPILE, [new CSS(), 'compile']);
 
         // Subscribe to core template rendering event
         Event::subscribe('core.rendered', [$this, 'renderTemplate']);
@@ -105,7 +105,10 @@ class Router extends ExternalModule
         $resourceManager::$webRoot = getcwd();
         $resourceManager::$projectRoot = dirname($resourceManager::$webRoot) . '/';
 
-        $resourceManager->manage($this->getAssets());
+        // Get assets
+        $this->resources = $resourceManager->manage($this->getAssets());
+        // Get asset URLs
+        $this->resourceUrls = array_map([$this, 'getAssetCachedUrl'], $this->resources);
 
         // Fire completion event
         Event::fire(self::E_FINISHED);
@@ -156,20 +159,34 @@ class Router extends ExternalModule
     public function renderTemplate(&$view)
     {
         foreach ($this->resourceUrls as $type => $urls) {
-            // Replace template marker by type with collection of links to resources of this type
-            $view = str_ireplace(
-                $this->templateMarkers[$type],
-                implode("\n", array_map(function ($value) use ($type) {
-                    if ($type === 'css') {
-                        return '<link type="text/css" rel="stylesheet" property="stylesheet" href="' . $value . '">';
-                    } elseif ($type === 'js') {
-                        return '<script type="text/javascript" src="' . $value . '"></script>';
-                    }
-                }, $urls)) . "\n" . $this->templateMarkers[$type],
-                $view
-            );
+            if (array_key_exists($type, $this->templateMarkers)) {
+                // Replace template marker by type with collection of links to resources of this type
+                $view = str_ireplace(
+                    $this->templateMarkers[$type],
+                    implode("\n", array_map(function ($value) use ($type) {
+                        if ($type === 'css') {
+                            return '<link type="text/css" rel="stylesheet" property="stylesheet" href="' . $value . '">';
+                        } elseif ($type === 'js') {
+                            return '<script type="text/javascript" src="' . $value . '"></script>';
+                        }
+                    }, $urls)) . "\n" . $this->templateMarkers[$type],
+                    $view
+                );
+            }
         }
 
         return $view;
+    }
+
+    /**
+     * Get cached asset URL.
+     *
+     * @param string $cachedAsset Full path to cached asset
+     *
+     * @return mixed Cached asset URL
+     */
+    private function getAssetCachedUrl($cachedAsset)
+    {
+        return str_replace(ResourceManager::$webRoot, '', $cachedAsset);
     }
 }
