@@ -5,9 +5,10 @@
  */
 namespace samsonphp\less\tests;
 
+use PHPUnit\Framework\TestCase;
 use samsonphp\resource\FileManager;
 
-class FileManagerTest extends \PHPUnit_Framework_TestCase
+class FileManagerTest extends TestCase
 {
     /** @var FileManager */
     protected $manager;

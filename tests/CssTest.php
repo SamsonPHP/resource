@@ -5,10 +5,11 @@
  */
 namespace samsonphp\less\tests;
 
+use PHPUnit\Framework\TestCase;
 use samsonphp\resource\CSS;
 use samsonphp\resource\ResourceValidator;
 
-class CssTest extends \PHPUnit_Framework_TestCase
+class CssTest extends TestCase
 {
     /** @var CSS */
     protected $css;
@@ -21,6 +22,9 @@ class CssTest extends \PHPUnit_Framework_TestCase
 
         ResourceValidator::$projectRoot = __DIR__ . '/';
         ResourceValidator::$webRoot = __DIR__ . '/www/';
+
+        // Testing other deprecated functions here
+        ResourceValidator::getWebRelativePath('test.jpg', __DIR__ . '/');
 
         $resourcePath = __DIR__ . '/test.jpg';
         file_put_contents($resourcePath, '/** TEST */');

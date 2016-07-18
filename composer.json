@@ -20,7 +20,7 @@
     "samsonphp/event": "1.*"
   },
   "require-dev": {
-    "phpunit/phpunit": "4.*"
+    "phpunit/phpunit": "5.*"
   },
   "replace": {
     "samsonos/php_resourcer": "*"

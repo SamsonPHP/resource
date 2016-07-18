@@ -5,11 +5,12 @@
  */
 namespace samsonphp\less\tests;
 
+use PHPUnit\Framework\TestCase;
 use samsonphp\resource\FileManager;
 use samsonphp\resource\FileManagerInterface;
 use samsonphp\resource\ResourceManager;
 
-class ResourceTest extends \PHPUnit_Framework_TestCase
+class ResourceTest extends TestCase
 {
     /** @var Resource */
     protected $resource;

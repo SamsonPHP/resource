@@ -86,7 +86,7 @@ class Router extends ExternalModule
      *
      * @return array Resources paths
      */
-    private function getAssets($moduleList)
+    public function getAssets($moduleList)
     {
         $projectRoot = dirname(getcwd()) . '/';
 
