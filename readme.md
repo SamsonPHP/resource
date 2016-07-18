@@ -8,7 +8,7 @@ SamsonPHP static resource management module.
 [![Latest Stable Version](https://poser.pugx.org/SamsonPHP/Resource/v/stable.svg)](https://packagist.org/packages/SamsonPHP/Resource)
 [![Build Status](https://scrutinizer-ci.com/g/SamsonPHP/Resource/badges/build.png?b=master)](https://scrutinizer-ci.com/g/SamsonPHP/Resource/build-status/master)
 [![Code Coverage](https://scrutinizer-ci.com/g/SamsonPHP/Resource/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/SamsonPHP/Resource/?branch=master)
-[![Code Climate](https://codeclimate.com/github/SamsonPHP/Resource/badges/gpa.svg)](https://codeclimate.com/github/SamsonPHP/Resource)
+[![Code Climate](https://codeclimate.com/github/SamsonPHP/resource/badges/gpa.svg)](https://codeclimate.com/github/SamsonPHP/resource)
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/SamsonPHP/Resource/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/SamsonPHP/Resource/?branch=master) 
 [![Total Downloads](https://poser.pugx.org/SamsonPHP/Resource/downloads.svg)](https://packagist.org/packages/SamsonPHP/Resource)
 [![Stories in Ready](https://badge.waffle.io/SamsonPHP/Resource.png?label=ready&title=Ready)](https://waffle.io/SamsonPHP/Resource)
