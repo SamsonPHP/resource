@@ -24,50 +24,8 @@ class Router extends ExternalModule
     /** Event when recourse management is finished */
     const E_FINISHED = 'resourcer.finished';
 
-    /** Assets types */
-    const T_CSS = 'css';
-    const T_LESS = 'less';
-    const T_SCSS = 'scss';
-    const T_SASS = 'sass';
-    const T_JS = 'js';
-    const T_TS = 'ts';
-    const T_COFFEE = 'coffee';
-
-    /** Assets types collection */
-    const TYPES = [
-        self::T_CSS,
-        self::T_LESS,
-        self::T_SCSS,
-        self::T_SASS,
-        self::T_JS,
-        self::T_TS,
-        self::T_COFFEE
-    ];
-
-    /** Assets converter */
-    const CONVERTER = [
-        self::T_JS => self::T_JS,
-        self::T_TS => self::T_JS,
-        self::T_COFFEE => self::T_JS,
-        self::T_CSS => self::T_CSS,
-        self::T_LESS => self::T_CSS,
-        self::T_SCSS => self::T_CSS,
-        self::T_SASS => self::T_CSS,
-    ];
-
     /** @deprecated Identifier */
     protected $id = STATIC_RESOURCE_HANDLER;
-
-    /** Collection of registered resource types */
-    protected $types = [
-        self::T_CSS,
-        self::T_JS,
-        self::T_LESS,
-        self::T_SCSS,
-        self::T_SASS,
-        self::T_COFFEE,
-        self::T_TS
-    ];
 
     /** @var array Assets cache */
     protected $cache = [];
@@ -95,7 +53,7 @@ class Router extends ExternalModule
     public function init(array $params = array())
     {
         // Subscribe for CSS handling
-        //Event::subscribe(self::E_RESOURCE_COMPILE, [new CSS(), 'compile']);
+        Event::subscribe(self::E_RESOURCE_COMPILE, [new CSS(), 'compile']);
 
         // Subscribe to core template rendering event
         Event::subscribe('core.rendered', [$this, 'renderTemplate']);
@@ -105,13 +63,22 @@ class Router extends ExternalModule
         $resourceManager::$webRoot = getcwd();
         $resourceManager::$projectRoot = dirname($resourceManager::$webRoot) . '/';
 
+        // Get loaded modules
+        $moduleList = $this->system->module_stack;
+
+        // Event for modification of resource list
+        Event::fire(self::E_MODULES, [&$moduleList]);
+
+        $appResourcePaths = $this->getAssets($moduleList);
+
         // Get assets
-        $this->resources = $resourceManager->manage($this->getAssets());
-        // Get asset URLs
-        $this->resourceUrls = array_map([$this, 'getAssetCachedUrl'], $this->resources);
+        $this->resources = $resourceManager->manage($appResourcePaths);
 
         // Fire completion event
-        Event::fire(self::E_FINISHED);
+        Event::fire(self::E_FINISHED, [&$this->resources]);
+
+        // Get asset URLs
+        $this->resourceUrls = array_map([$this, 'getAssetCachedUrl'], $this->resources);
 
         // Continue parent initialization
         return parent::init($params);
@@ -119,15 +86,13 @@ class Router extends ExternalModule
 
     /**
      * Get asset files from modules.
+     *
+     * @param array $moduleList Collection of modules
+     *
+     * @return array Resources paths
      */
-    private function getAssets()
+    private function getAssets($moduleList)
     {
-        // Get loaded modules
-        $moduleList = $this->system->module_stack;
-
-        // Event for modification of resource list
-        Event::fire(self::E_MODULES, array(&$moduleList));
-
         $projectRoot = dirname(getcwd()) . '/';
 
         // Add resource paths

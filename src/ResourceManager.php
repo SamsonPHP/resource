@@ -46,7 +46,7 @@ class ResourceManager
         self::T_JS,
         self::T_TS,
         self::T_COFFEE,
-        self::T_JPG,
+        /*self::T_JPG,
         self::T_JPEG,
         self::T_PNG,
         self::T_GIF,
@@ -54,7 +54,7 @@ class ResourceManager
         self::T_TTF,
         self::T_WOFF,
         self::T_WOFF2,
-        self::T_EOT,
+        self::T_EOT,*/
     ];
 
     /** Assets converter */
