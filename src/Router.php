@@ -84,7 +84,7 @@ class Router extends ExternalModule
      *
      * @param array $moduleList Collection of modules
      *
-     * @return array Resources paths
+     * @return string[] Resources paths
      */
     public function getAssets($moduleList)
     {

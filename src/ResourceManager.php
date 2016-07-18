@@ -106,9 +106,9 @@ class ResourceManager
     /**
      * Create static assets.
      *
-     * @param array $paths Collection of paths for gathering assets
+     * @param string[] $paths Collection of paths for gathering assets
      *
-     * @return array Cached assets full paths collection
+     * @return string[] Cached assets full paths collection
      */
     public function manage(array $paths)
     {
