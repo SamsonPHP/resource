@@ -48,38 +48,27 @@ class CSS
      */
     public function rewriteUrls($matches)
     {
-        // If we have found static resource path definition and its not inline
-        if (array_key_exists(2, $matches) && strpos($matches[2], 'data:') === false) {
-            // Store static resource path
-            $url = $matches[2];
+        // Store static resource path
+        $url = $matches[2];
 
-            // Ignore preprocessor vars
-            // TODO: This is totally wrong need to come up with decision
-            if (strpos($url, '@') !== false) {
-                return $matches[0];
-            }
-
-            // Remove possible GET parameters from resource path
-            if (($getStart = strpos($url, '?')) !== false) {
-                $url = substr($url, 0, $getStart);
-            }
-
-            // Remove possible HASH parameters from resource path
-            if (($getStart = strpos($url, '#')) !== false) {
-                $url = substr($url, 0, $getStart);
-            }
-
-            // Try to find resource and output full error
-            try {
-                $path = ResourceValidator::getProjectRelativePath($url, dirname($this->currentResource));
-            } catch (ResourceNotFound $e) {
-                throw new ResourceNotFound('Cannot find resource "'.$url.'" in "'.$this->currentResource.'"');
-            }
-
-            // Build path to static resource handler
-            return 'url("/' . STATIC_RESOURCE_HANDLER . '/?p=' . $path . '")';
+        // Remove possible GET parameters from resource path
+        if (($getStart = strpos($url, '?')) !== false) {
+            $url = substr($url, 0, $getStart);
         }
 
-        return $matches[0];
+        // Remove possible HASH parameters from resource path
+        if (($getStart = strpos($url, '#')) !== false) {
+            $url = substr($url, 0, $getStart);
+        }
+
+        // Try to find resource and output full error
+        try {
+            $path = ResourceValidator::getProjectRelativePath($url, dirname($this->currentResource));
+        } catch (ResourceNotFound $e) {
+            throw new ResourceNotFound('Cannot find resource "' . $url . '" in "' . $this->currentResource . '"');
+        }
+
+        // Build path to static resource handler
+        return 'url("/' . STATIC_RESOURCE_HANDLER . '/?p=' . $path . '")';
     }
 }

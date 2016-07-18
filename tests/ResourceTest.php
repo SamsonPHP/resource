@@ -39,7 +39,7 @@ class ResourceTest extends \PHPUnit_Framework_TestCase
             $parent = implode('/', array_fill(0, $i, 'folder'));
             foreach (ResourceManager::TYPES as $type) {
                 $file = $parent . '/test' . $i . '.' . $type;
-                $this->fileManager->write(__DIR__ . '/' . $file, '');
+                $this->fileManager->write(__DIR__ . '/' . $file, '/** TEST */');
                 $this->files[] = $file;
             }
         }

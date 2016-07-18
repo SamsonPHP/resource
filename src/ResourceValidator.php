@@ -7,6 +7,11 @@ namespace samsonphp\resource;
 
 use samsonphp\resource\exception\ResourceNotFound;
 
+/**
+ * Class for assets path generation.
+ * @deprecated Should be changed to avoid this rewritings
+ * @package    samsonphp\resource
+ */
 class ResourceValidator
 {
     /** @var string Full path to project web root directory */
