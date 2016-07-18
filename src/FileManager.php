@@ -146,19 +146,6 @@ class FileManager implements FileManagerInterface
         // Scan path excluding folder patterns
         exec('find ' . implode(' ', $paths) . ' -type f ' . $filters, $files);
 
-        // Sort files alphabetically
-        usort($files, function ($a, $b) {
-            if (strpos($a, 'vendor/') !== false && strpos($b, 'vendor/') === false) {
-                return -1;
-            } elseif (strpos($b, 'vendor/') !== false && strpos($a, 'vendor/') === false) {
-                return 1;
-            } elseif ($a === $b) {
-                return 0;
-            } else {
-                return strcmp($a, $b);
-            }
-        });
-
         // TODO: Why some paths have double slashes? Investigate speed of realpath, maybe // changing if quicker
         return array_map('realpath', $files);
     }
