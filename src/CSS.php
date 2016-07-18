@@ -52,14 +52,10 @@ class CSS
         $url = $matches[2];
 
         // Remove possible GET parameters from resource path
-        if (($getStart = strpos($url, '?')) !== false) {
-            $url = substr($url, 0, $getStart);
-        }
+        $url = $this->getOnlyUrl($url, '?');
 
         // Remove possible HASH parameters from resource path
-        if (($getStart = strpos($url, '#')) !== false) {
-            $url = substr($url, 0, $getStart);
-        }
+        $url = $this->getOnlyUrl($url, '#');
 
         // Try to find resource and output full error
         try {
@@ -70,5 +66,23 @@ class CSS
 
         // Build path to static resource handler
         return 'url("/' . STATIC_RESOURCE_HANDLER . '/?p=' . $path . '")';
+    }
+
+    /**
+     * Get only path or URL before marker.
+     *
+     * @param string $path   Full URL with possible unneeded data
+     * @param string $marker Marker for separation
+     *
+     * @return string Filtered asset URL
+     */
+    protected function getOnlyUrl($path, $marker)
+    {
+        // Remove possible GET parameters from resource path
+        if (($getStart = strpos($path, $marker)) !== false) {
+            return substr($path, 0, $getStart);
+        }
+
+        return $path;
     }
 }
