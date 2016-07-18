@@ -12,6 +12,7 @@ On module initialization stage all modules paths are scanned for assets of suppo
  * ```js```
  * ```ts```
  * ```coffee```
+ 
 And being processed and stored in module cache folder in project web root accordingly to original location.
 
 ## CSS urls rewriting
