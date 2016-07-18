@@ -4,15 +4,15 @@
  * on 26.04.16 at 10:43
  */
 
-use samsonphp\resource\ResourceManager;
+use samsonphp\resource\ResourceValidator;
 
 // Define this resource identifier
 define('STATIC_RESOURCE_HANDLER', 'resourcer');
 
 // Get current project web root directory
-ResourceManager::$webRoot = getcwd();
+ResourceValidator::$webRoot = getcwd();
 // Get current project root directory
-ResourceManager::$projectRoot = dirname(ResourceManager::$webRoot);
+ResourceValidator::$projectRoot = dirname(ResourceValidator::$webRoot);
 
 /**
  * Static resource path builder.
@@ -39,7 +39,7 @@ function src($path, $module = null)
             $module = m();
     }
 
-    echo '/' . STATIC_RESOURCE_HANDLER . '/?p=' . ResourceManager::getRelativePath($path, $module->path());
+    echo '/' . STATIC_RESOURCE_HANDLER . '/?p=' . ResourceValidator::getRelativePath($path, $module->path());
 }
 
 /** Collection of supported mime types */
