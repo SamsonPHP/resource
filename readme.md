@@ -2,7 +2,8 @@
  
 SamsonPHP static resource management module.
 
-> Main goal is gathering and managing web-application resources
+> Main goal is gathering and managing web-application resources in local development to
+> make assets management as easy as possible. 
 
 [![Latest Stable Version](https://poser.pugx.org/SamsonPHP/Resource/v/stable.svg)](https://packagist.org/packages/SamsonPHP/Resource)
 [![Build Status](https://scrutinizer-ci.com/g/SamsonPHP/Resource/badges/build.png?b=master)](https://scrutinizer-ci.com/g/SamsonPHP/Resource/build-status/master)
