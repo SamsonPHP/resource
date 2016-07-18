@@ -140,11 +140,22 @@ class FileManager implements FileManagerInterface
 
         // Generate filters
         $filters = implode('-o ', array_map(function ($value) use ($exclude) {
-            return '-name "*.' . $value . '" ' . $exclude;
+            return '-type f -name "*.' . $value . '" ' . $exclude;
         }, $extensions));
 
-        // Scan path excluding folder patterns
-        exec('find ' . implode(' ', $paths) . ' -type f ' . $filters, $files);
+        /**
+         * Firstly was implemented as single "find" command call with multiple paths but
+         * Ubuntu sort files not alphabetically which forced to use piping with sort command
+         * and calling each part separately
+         * TODO: Probably there is a command which will achieve this with one call
+         */
+        foreach ($paths as $path) {
+            // Scan path excluding folder patterns
+            $tempFiles = [];
+            exec('find ' . $path . ' ' . $filters . ' | sort ', $tempFiles);
+
+            $files = array_merge($files, $tempFiles);
+        }
 
         // TODO: Why some paths have double slashes? Investigate speed of realpath, maybe // changing if quicker
         return array_map('realpath', $files);
