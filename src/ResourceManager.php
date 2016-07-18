@@ -90,6 +90,9 @@ class ResourceManager
     /** @var array Collection of assets */
     protected $assets = [];
 
+    /** @var FileManagerInterface */
+    protected $fileManager;
+
     /**
      * Resource constructor.
      *
