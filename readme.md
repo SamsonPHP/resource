@@ -31,6 +31,6 @@ Feel free to fork and create pull requests at any time.
 If you discover any security related issues, please use this repository issue tracker.
 
 ##License
-Open Software License ("OSL") v 3.0. Please see License File for more information.
+Open Software License ("OSL") v 3.0. Please [see License File](https://github.com/SamsonPHP/resource/blob/master/license.md) for more information.
  
 [SamsonOS](http://samsonos.com)
