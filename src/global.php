@@ -39,7 +39,7 @@ function src($path, $module = null)
             $module = m();
     }
 
-    echo '/' . STATIC_RESOURCE_HANDLER . '/?p=' . ResourceValidator::getRelativePath($path, $module->path());
+    echo '/' . STATIC_RESOURCE_HANDLER . '/?p=' . ResourceValidator::getRelativePath($path, $module->path(), dirname(getcwd()));
 }
 
 /** Collection of supported mime types */
