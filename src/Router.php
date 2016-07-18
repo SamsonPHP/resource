@@ -27,14 +27,9 @@ class Router extends ExternalModule
     /** @deprecated Identifier */
     protected $id = STATIC_RESOURCE_HANDLER;
 
-    /** @var array Assets cache */
-    protected $cache = [];
-
     /** @var array Template markers for inserting assets */
-    protected $templateMarkers = [
-        'css' => '</head>',
-        'js' => '</body>'
-    ];
+    protected $templateMarkers = ['css' => '</head>', 'js' => '</body>'];
+
     /** @var array Collection of static resources */
     protected $resources = [];
 
