@@ -59,11 +59,11 @@ class CssTest extends TestCase
 
     public function testCompileWithDataUri()
     {
-        $css = '.class { url("data/jpeg;base64 kdFSDfsdjfnskdnfksdnfksdf"); }';
+        $css = '.class { url("data/jpeg;base64,kdFSDfsdjfnskdnfksdnfksdf"); }';
 
         $this->css->compile('test.css', 'css', $css);
 
-        $this->assertEquals('.class { url("data/jpeg;base64 kdFSDfsdjfnskdnfksdnfksdf"); }', $css);
+        $this->assertEquals('.class { url("data/jpeg;base64,kdFSDfsdjfnskdnfksdnfksdf"); }', $css);
     }
 
     public function testCompileWithResourceNotFound()

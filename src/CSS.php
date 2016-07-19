@@ -51,21 +51,25 @@ class CSS
         // Store static resource path
         $url = $matches[2];
 
-        // Remove possible GET parameters from resource path
-        $url = $this->getOnlyUrl($url, '?');
+        if (strpos($url, 'data:') === false) {
+            // Remove possible GET parameters from resource path
+            $url = $this->getOnlyUrl($url, '?');
 
-        // Remove possible HASH parameters from resource path
-        $url = $this->getOnlyUrl($url, '#');
+            // Remove possible HASH parameters from resource path
+            $url = $this->getOnlyUrl($url, '#');
 
-        // Try to find resource and output full error
-        try {
-            $path = ResourceValidator::getProjectRelativePath($url, dirname($this->currentResource));
-        } catch (ResourceNotFound $e) {
-            throw new ResourceNotFound('Cannot find resource "' . $url . '" in "' . $this->currentResource . '"');
+            // Try to find resource and output full error
+            try {
+                $path = ResourceValidator::getProjectRelativePath($url, dirname($this->currentResource));
+            } catch (ResourceNotFound $e) {
+                throw new ResourceNotFound('Cannot find resource "' . $url . '" in "' . $this->currentResource . '"');
+            }
+
+            // Build path to static resource handler
+            return 'url("/' . STATIC_RESOURCE_HANDLER . '/?p=' . $path . '")';
         }
 
-        // Build path to static resource handler
-        return 'url("/' . STATIC_RESOURCE_HANDLER . '/?p=' . $path . '")';
+        return $matches[0];
     }
 
     /**
