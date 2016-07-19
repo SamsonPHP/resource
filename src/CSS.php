@@ -51,7 +51,7 @@ class CSS
         // Store static resource path
         $url = $matches[2];
 
-        if (strpos($url, 'data:') === false) {
+        if (strpos($url, 'data/') === false) {
             // Remove possible GET parameters from resource path
             $url = $this->getOnlyUrl($url, '?');
 
