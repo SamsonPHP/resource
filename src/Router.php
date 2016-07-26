@@ -2,6 +2,7 @@
 namespace samsonphp\resource;
 
 use samson\core\ExternalModule;
+use samsonframework\filemanager\FileManagerInterface;
 use samsonphp\event\Event;
 
 /**
@@ -23,6 +24,9 @@ class Router extends ExternalModule
     const E_RESOURCE_COMPILE = ResourceManager::E_COMPILE;
     /** Event when recourse management is finished */
     const E_FINISHED = 'resourcer.finished';
+
+    /** @var FileManagerInterface File system manager */
+    public $fileManager;
 
     /** @deprecated Identifier */
     protected $id = STATIC_RESOURCE_HANDLER;
@@ -47,13 +51,13 @@ class Router extends ExternalModule
      */
     public function init(array $params = array())
     {
-        // Subscribe for CSS handling
-        Event::subscribe(self::E_RESOURCE_COMPILE, [new CSS(), 'compile']);
-
         // Subscribe to core template rendering event
         Event::subscribe('core.rendered', [$this, 'renderTemplate']);
 
-        $resourceManager = new ResourceManager(new FileManager());
+        // Set default dependency as local file manager
+        $this->fileManager = $this->fileManager ?: new LocalFileManager();
+
+        $resourceManager = new ResourceManager($this->fileManager);
         $resourceManager::$cacheRoot = $this->cache_path;
         $resourceManager::$webRoot = getcwd();
         $resourceManager::$projectRoot = dirname($resourceManager::$webRoot) . '/';

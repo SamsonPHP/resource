@@ -16,6 +16,7 @@
     }
   ],
   "require": {
+    "samsonframework/localfilemanager": "1.*",
     "samsonos/php_core": "1.*",
     "samsonphp/event": "1.*"
   },
