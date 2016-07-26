@@ -3,6 +3,7 @@ namespace samsonphp\resource;
 
 use samson\core\ExternalModule;
 use samsonframework\filemanager\FileManagerInterface;
+use samsonframework\localfilemanager\LocalFileManager;
 use samsonphp\event\Event;
 
 /**
