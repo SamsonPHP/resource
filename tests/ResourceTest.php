@@ -6,8 +6,8 @@
 namespace samsonphp\less\tests;
 
 use PHPUnit\Framework\TestCase;
-use samsonphp\resource\FileManager;
-use samsonphp\resource\FileManagerInterface;
+use samsonframework\filemanager\FileManagerInterface;
+use samsonframework\localfilemanager\LocalFileManager;
 use samsonphp\resource\ResourceManager;
 
 class ResourceTest extends TestCase
@@ -21,7 +21,7 @@ class ResourceTest extends TestCase
 
     public function setUp()
     {
-        $this->fileManager = new FileManager();
+        $this->fileManager = new LocalFileManager();
         $this->resource = new ResourceManager($this->fileManager);
 
         // Switch paths to testing environment
