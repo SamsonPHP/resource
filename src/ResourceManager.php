@@ -5,6 +5,7 @@
  */
 namespace samsonphp\resource;
 
+use samsonframework\filemanager\FileManagerInterface;
 use samsonphp\event\Event;
 
 /**
