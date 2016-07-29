@@ -105,6 +105,35 @@ class ResourceManager
     }
 
     /**
+     * Recursively process asset
+     * @param array $dependencies Collection of assets for compilation
+     */
+    protected function processAsset($dependencies)
+    {
+        foreach ($dependencies as $source => $nothing) {
+            // Read asset content
+            $content = $this->fileManager->read($source);
+
+            $extension = pathinfo($source, PATHINFO_EXTENSION);
+
+            // Resource dependant resources
+            $innerDependencies = [];
+
+            // Compile content
+            $compiled = $content;
+            Event::fire(self::E_COMPILE, [$source, &$extension, &$compiled, &$innerDependencies]);
+
+            // Write compiled asset
+            $target = $this->getAssetProcessedPath($source);
+            $this->fileManager->write($target, $compiled);
+            $this->fileManager->touch($target, $this->fileManager->lastModified($source));
+
+            // Go deeper in recursion
+            $this->processAsset($innerDependencies);
+        }
+    }
+
+    /**
      * Create static assets.
      *
      * @param string[] $paths Collection of paths for gathering assets
@@ -113,66 +142,24 @@ class ResourceManager
      */
     public function manage(array $paths)
     {
+        // Get assets list
         $assets = $this->fileManager->scan($paths, self::TYPES, self::$excludeFolders);
 
         // Iterate all assets for analyzing
-        $cache = [];
         foreach ($assets as $asset) {
-            $cache[$asset] = $this->analyzeAsset($asset);
-        }
-        $cache = array_filter($cache);
+            // Build path to processed asset
+            $cachedAsset = $this->getAssetProcessedPath($asset);
 
-        // Iterate invalid assets
-        foreach ($cache as $file => $content) {
-            $extension = pathinfo($file, PATHINFO_EXTENSION);
-
-            // Compile content
-            $compiled = $content;
-            Event::fire(self::E_COMPILE, [$file, &$extension, &$compiled]);
-
-            $asset = $this->getAssetCachedPath($file);
-            $this->fileManager->write($asset, $compiled);
-            $this->fileManager->touch($asset, $this->fileManager->lastModified($file));
-
-            $this->assets[$extension][] = $asset;
+            // If cached assets was modified or new
+            if (!$this->isValid($asset, $cachedAsset)) {
+                // Recursively process asset and possible dependencies
+                $this->processAsset([$asset => []]);
+                // Store processed asset
+                $this->assets[pathinfo($cachedAsset, PATHINFO_EXTENSION)][] = $cachedAsset;
+            }
         }
 
         return $this->assets;
-    }
-
-    /**
-     * Analyze asset.
-     *
-     * @param string $asset Full path to asset
-     *
-     * @return string Analyzed asset content
-     */
-    protected function analyzeAsset($asset)
-    {
-        // Generate cached resource path with possible new extension after compiling
-        $cachedAsset = $this->getAssetCachedPath($asset);
-
-        $extension = pathinfo($asset, PATHINFO_EXTENSION);
-
-        // If cached assets was modified or new
-        if (!$this->isValid($asset, $cachedAsset)) {
-            // Read asset content
-            $content = $this->fileManager->read($asset);
-
-            // Fire event for analyzing resource
-            Event::fire(self::E_ANALYZE, [
-                $asset,
-                $extension,
-                &$content
-            ]);
-
-            return $content;
-        } else {
-            // Add this resource to resource collection grouped by resource type
-            $this->assets[$this->convertType($asset)][] = $cachedAsset;
-        }
-
-        return '';
     }
 
     /**
@@ -182,7 +169,7 @@ class ResourceManager
      *
      * @return string Full path to cached asset
      */
-    protected function getAssetCachedPath($asset)
+    protected function getAssetProcessedPath($asset)
     {
         // Build asset project root relative path
         $relativePath = str_replace(self::$projectRoot, '', $asset);
