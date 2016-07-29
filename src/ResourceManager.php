@@ -85,9 +85,6 @@ class ResourceManager
     /** @var string Full path to project cache root directory */
     public static $cacheRoot;
 
-    /** @var array Cached assets */
-    protected $cache = [];
-
     /** @var array Collection of assets */
     protected $assets = [];
 
@@ -142,11 +139,8 @@ class ResourceManager
      */
     public function manage(array $paths)
     {
-        // Get assets list
-        $assets = $this->fileManager->scan($paths, self::TYPES, self::$excludeFolders);
-
         // Iterate all assets for analyzing
-        foreach ($assets as $asset) {
+        foreach ($this->fileManager->scan($paths, self::TYPES, self::$excludeFolders) as $asset) {
             // Build path to processed asset
             $cachedAsset = $this->getAssetProcessedPath($asset);
 
@@ -154,9 +148,10 @@ class ResourceManager
             if (!$this->isValid($asset, $cachedAsset)) {
                 // Recursively process asset and possible dependencies
                 $this->processAsset([$asset => []]);
-                // Store processed asset
-                $this->assets[pathinfo($cachedAsset, PATHINFO_EXTENSION)][] = $cachedAsset;
             }
+
+            // Store processed asset
+            $this->assets[pathinfo($cachedAsset, PATHINFO_EXTENSION)][] = $cachedAsset;
         }
 
         return $this->assets;
