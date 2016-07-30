@@ -73,7 +73,8 @@ class ResourceManager
     public static $excludeFolders = [
         '*/cache/*',
         '*/tests/*',
-        '*/vendor/*/vendor/*'
+        '*/vendor/*/vendor/*',
+        '*/node_modules/*'
     ];
 
     /** @var string Full path to project web root directory */
