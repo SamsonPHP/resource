@@ -4,6 +4,7 @@ namespace samsonphp\resource;
 use samson\core\ExternalModule;
 use samsonframework\filemanager\FileManagerInterface;
 use samsonframework\localfilemanager\LocalFileManager;
+use samsonphp\compressor\Compressor;
 use samsonphp\event\Event;
 
 /**
@@ -26,6 +27,8 @@ class Router extends ExternalModule
     /** Event when recourse management is finished */
     const E_FINISHED = 'resourcer.finished';
 
+    const I_MAIN_PROJECT_TEMPLATE = 'main.template';
+
     /** @var FileManagerInterface File system manager */
     public $fileManager;
 
@@ -41,6 +44,9 @@ class Router extends ExternalModule
     /** @var array Collection of static resource URLs */
     protected $resourceUrls = [];
 
+    /** @var  ResourceManager */
+    protected $resourceManager;
+
     /**
      * Module initialization stage.
      *
@@ -55,13 +61,15 @@ class Router extends ExternalModule
         // Subscribe to core template rendering event
         Event::subscribe('core.rendered', [$this, 'renderTemplate']);
 
+        Event::subscribe(Compressor::E_CREATE_RESOURCE_LIST, [$this, 'getResources']);
+
         // Set default dependency as local file manager
         $this->fileManager = $this->fileManager ?: new LocalFileManager();
 
-        $resourceManager = new ResourceManager($this->fileManager);
-        $resourceManager::$cacheRoot = $this->cache_path;
-        $resourceManager::$webRoot = getcwd();
-        $resourceManager::$projectRoot = dirname($resourceManager::$webRoot) . '/';
+        $this->resourceManager = new ResourceManager($this->fileManager);
+        $this->resourceManager::$cacheRoot = $this->cache_path;
+        $this->resourceManager::$webRoot = getcwd();
+        $this->resourceManager::$projectRoot = dirname($this->resourceManager::$webRoot) . '/';
 
         // Get loaded modules
         $moduleList = $this->system->module_stack;
@@ -72,7 +80,7 @@ class Router extends ExternalModule
         $appResourcePaths = $this->getAssets($moduleList);
 
         // Get assets
-        $this->resources = $resourceManager->manage($appResourcePaths);
+        $this->resources = $this->resourceManager->manage($appResourcePaths);
 
         // Fire completion event
         Event::fire(self::E_FINISHED, [&$this->resources]);
@@ -121,9 +129,11 @@ class Router extends ExternalModule
      *
      * @return mixed
      */
-    public function renderTemplate(&$view)
+    public function renderTemplate(&$view, $resourceUrls = [])
     {
-        foreach ($this->resourceUrls as $type => $urls) {
+        $resourceUrls = empty($resourceUrls)?$this->resourceUrls:$resourceUrls;
+
+        foreach ($resourceUrls as $type => $urls) {
             if (array_key_exists($type, $this->templateMarkers)) {
                 // Replace template marker by type with collection of links to resources of this type
                 $view = str_ireplace(
@@ -141,6 +151,16 @@ class Router extends ExternalModule
         }
 
         return $view;
+    }
+
+    public function getResources(&$resources = [], $moduleList = null)
+    {
+        $moduleList = isset($moduleList)?$moduleList:$this->system->module_stack;
+
+        $appResourcePaths = $this->getAssets($moduleList);
+
+        // Get assets
+        $resources = $this->resourceManager->manage($appResourcePaths);
     }
 
     /**
