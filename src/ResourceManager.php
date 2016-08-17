@@ -140,6 +140,7 @@ class ResourceManager
      */
     public function manage(array $paths)
     {
+        $this->assets = [];
         // Iterate all assets for analyzing
         foreach ($this->fileManager->scan($paths, self::TYPES, self::$excludeFolders) as $asset) {
             // Build path to processed asset
