@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 namespace samsonphp\resource;
 
 use samson\core\ExternalModule;
@@ -67,12 +67,12 @@ class Router extends ExternalModule
         $this->fileManager = $this->fileManager ?: new LocalFileManager();
 
         $this->resourceManager = new ResourceManager($this->fileManager);
-        $this->resourceManager::$cacheRoot = $this->cache_path;
-        $this->resourceManager::$webRoot = getcwd();
-        $this->resourceManager::$projectRoot = dirname($this->resourceManager::$webRoot) . '/';
+        ResourceManager::$cacheRoot = $this->cache_path;
+        ResourceManager::$webRoot = getcwd();
+        ResourceManager::$projectRoot = dirname(ResourceManager::$webRoot) . '/';
 
         // Get loaded modules
-        $moduleList = $this->system->module_stack;
+        $moduleList = $this->system->getContainer()->getServices();
 
         // Event for modification of resource list
         Event::fire(self::E_MODULES, [&$moduleList]);

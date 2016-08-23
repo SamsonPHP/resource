@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /**
  * Created by Vitaly Iegorov <egorov@samsonos.com>.
  * on 15.05.16 at 10:52
@@ -11,7 +11,7 @@ use samsonphp\event\Event;
 /**
  * Resource assets management class.
  *
- * @package samsonphp\resource
+ * @author Vitaly Egorov <egorov@samsonos.com>
  */
 class ResourceManager
 {
