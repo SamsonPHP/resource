@@ -27,10 +27,10 @@
     "samsonos/php_resourcer": "*"
   },
   "extra": {
-        "branch-alias": {
-            "dev-master": "1.x-dev"
-        }
+    "branch-alias": {
+      "dev-master": "1.x-dev"
     }
+  },
   "license": "Open Software License (OSL) v 3.0",
   "homepage": "http://samsonos.com/",
   "autoload": {
