@@ -72,7 +72,7 @@ class Router extends ExternalModule
         ResourceManager::$projectRoot = dirname(ResourceManager::$webRoot) . '/';
 
         // Get loaded modules
-        $moduleList = $this->system->getContainer()->getServices();
+        $moduleList = $this->system->getContainer()->getServices('module');
 
         // Event for modification of resource list
         Event::fire(self::E_MODULES, [&$moduleList]);
