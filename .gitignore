@@ -3,5 +3,4 @@ vendor/*
 upload/*
 www/cache/*
 www/upload/*
-composer.lock
 composer.phar
