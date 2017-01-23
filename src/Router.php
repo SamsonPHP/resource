@@ -61,7 +61,9 @@ class Router extends ExternalModule
         // Subscribe to core template rendering event
         Event::subscribe('core.rendered', [$this, 'renderTemplate']);
 
-        Event::subscribe(Compressor::E_CREATE_RESOURCE_LIST, [$this, 'getResources']);
+        if (class_exists(Compressor::class, false)) {
+            Event::subscribe(Compressor::E_CREATE_RESOURCE_LIST, [$this, 'getResources']);
+        }
 
         // Set default dependency as local file manager
         $this->fileManager = $this->fileManager ?: new LocalFileManager();
