@@ -72,7 +72,7 @@ class Router extends ExternalModule
         ResourceManager::$projectRoot = dirname(ResourceManager::$webRoot) . '/';
 
         // Get loaded modules
-        $moduleList = $this->system->getContainer()->getServices('module');
+        $moduleList = $this->system->module_stack;
 
         // Event for modification of resource list
         Event::fire(self::E_MODULES, [&$moduleList]);
@@ -153,14 +153,20 @@ class Router extends ExternalModule
         return $view;
     }
 
+    /**
+     *
+     * @param array $resources
+     * @param null  $moduleList
+     */
     public function getResources(&$resources = [], $moduleList = null)
     {
-        $moduleList = isset($moduleList)?$moduleList:$this->system->module_stack;
-
-        $appResourcePaths = $this->getAssets($moduleList);
-
         // Get assets
-        $resources = $this->resourceManager->manage($appResourcePaths);
+        $resources = $this->resourceManager->manage(
+            $this->getAssets($moduleList === null
+                ? $moduleList
+                : $this->system->module_stack
+            )
+        );
     }
 
     /**
