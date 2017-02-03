@@ -162,7 +162,7 @@ class Router extends ExternalModule
     {
         // Get assets
         $resources = $this->resourceManager->manage(
-            $this->getAssets($moduleList === null
+            $this->getAssets($moduleList !== null
                 ? $moduleList
                 : $this->system->module_stack
             )
