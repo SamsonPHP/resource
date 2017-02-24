@@ -20,6 +20,8 @@ class Router extends ExternalModule
     const EVENT_START_GENERATE_RESOURCES = 'resourcer.modulelist';
     /** Event for modifying modules */
     const E_MODULES = 'resourcer.modulelist';
+    /** Event for modifying web root path */
+    const E_ROOT_DIR_PATH = 'resourcer.add.webroot.path';
     /** Event for resources preloading */
     const E_RESOURCE_PRELOAD = ResourceManager::E_ANALYZE;
     /** Event for resources compiling */
