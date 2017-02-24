@@ -115,8 +115,15 @@ class Router extends ExternalModule
             }
         }
 
+        $webRootPath = getcwd();
+
         // Add web-root as last path
-        $paths[] = getcwd();
+        // Event for modification of resource list
+        Event::fire(self::E_ROOT_DIR_PATH, [&$webRootPath]);
+
+        if ($webRootPath) {
+            $paths[] = $webRootPath;
+        }
 
         return $paths;
     }
