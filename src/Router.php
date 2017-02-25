@@ -20,8 +20,6 @@ class Router extends ExternalModule
     const EVENT_START_GENERATE_RESOURCES = 'resourcer.modulelist';
     /** Event for modifying modules */
     const E_MODULES = 'resourcer.modulelist';
-    /** Event for modifying web root path */
-    const E_ROOT_DIR_PATH = 'resourcer.add.webroot.path';
     /** Event for resources preloading */
     const E_RESOURCE_PRELOAD = ResourceManager::E_ANALYZE;
     /** Event for resources compiling */
@@ -105,6 +103,8 @@ class Router extends ExternalModule
     {
         $projectRoot = dirname(getcwd()) . '/';
 
+        $needWebRootPath = false;
+
         // Add resource paths
         $paths = [];
         foreach ($moduleList as $module) {
@@ -114,17 +114,13 @@ class Router extends ExternalModule
              */
             if ($module->path() !== $projectRoot) {
                 $paths[] = $module->path();
+            } else {
+                $needWebRootPath = true;
             }
         }
 
-        $webRootPath = getcwd();
-
-        // Add web-root as last path
-        // Event for modification of resource list
-        Event::fire(self::E_ROOT_DIR_PATH, [&$webRootPath]);
-
-        if ($webRootPath) {
-            $paths[] = $webRootPath;
+        if ($needWebRootPath) {
+            $paths[] = getcwd();
         }
 
         return $paths;
